@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }} - Pharmacy IMS{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+{% block page_subtitle %}Customer contact details and discount eligibility{% endblock %}
+{% block breadcrumbs %}
+<i class="bi bi-chevron-right text-[0.6rem]"></i>
+<a href="{% url 'customer_list' %}" class="transition-colors hover:text-foreground">Customers</a>
+<i class="bi bi-chevron-right text-[0.6rem]"></i>
+<span class="text-foreground">{{ title }}</span>
+{% endblock %}
+{% block content %}
+<div class="card max-w-2xl">
+    <form method="post">
+        {% csrf_token %}
+        <div class="card-content space-y-4">
+            {% include 'partials/form_fields.html' %}
+        </div>
+        <div class="card-footer flex items-center justify-end gap-2 border-t border-border">
+            <a href="{% if customer %}{% url 'customer_detail' customer.pk %}{% else %}{% url 'customer_list' %}{% endif %}" class="btn btn-outline">Cancel</a>
+            <button class="btn btn-primary"><i class="bi bi-check2"></i> Save customer</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

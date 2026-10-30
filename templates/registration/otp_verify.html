@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title %}Two-factor authentication - Pharmacy IMS{% endblock %}
+{% block auth_content %}
+<div class="flex min-h-screen items-center justify-center bg-gradient-to-br from-background via-background to-emerald-50/40 px-4 py-10">
+    <div class="w-full max-w-sm">
+        <div class="flex flex-col items-center text-center">
+            <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-emerald-600 text-primary-foreground shadow-glow">
+                <i class="bi bi-shield-lock text-xl"></i>
+            </div>
+            <h1 class="mt-4 font-display text-2xl font-semibold tracking-tight">Two-factor authentication</h1>
+            <p class="mt-1 text-sm text-muted-foreground">Signed in as <span class="font-medium text-foreground">{{ username }}</span></p>
+        </div>
+
+        <div class="card mt-6">
+            <div class="card-header">
+                <h2 class="card-title">Enter your code</h2>
+                <p class="card-description">Open your authenticator app and enter the current 6-digit code.</p>
+            </div>
+            <form method="post">
+                {% csrf_token %}
+                <div class="card-content space-y-4">
+                    {% include 'partials/form_fields.html' %}
+                    {% if form.errors %}
+                    <p class="help-text">Codes rotate every 30 seconds. If this keeps failing, check your device clock.</p>
+                    {% endif %}
+                </div>
+                <div class="card-footer flex-col !items-stretch gap-2 border-t border-border">
+                    <button class="btn btn-primary w-full"><i class="bi bi-check2-circle"></i> Verify and continue</button>
+                    <a href="{% url 'login' %}" class="btn btn-ghost w-full">Cancel and sign in again</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

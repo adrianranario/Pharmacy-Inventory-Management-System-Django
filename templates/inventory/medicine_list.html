@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+{% block title %}Medicines - Pharmacy IMS{% endblock %}
+{% block page_title %}Medicines{% endblock %}
+{% block page_subtitle %}Catalog, pricing, and live stock levels{% endblock %}
+{% block breadcrumbs %}
+<i class="bi bi-chevron-right text-[0.6rem]"></i>
+<span class="text-foreground">Medicines</span>
+{% endblock %}
+{% block page_actions %}
+{% if nav_perms.manage_inventory %}
+<a href="{% url 'medicine_add' %}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Add Medicine</a>
+{% endif %}
+{% endblock %}
+{% block content %}
+<section class="card">
+    <div class="card-header border-b border-border">
+        <div>
+            <h2 class="card-title">Medicine Catalog</h2>
+            <p class="card-description">{{ page_obj.paginator.count }} medicine{{ page_obj.paginator.count|pluralize }} in your formulary</p>
+        </div>
+        <form method="get" class="filter-bar sm:justify-end">
+            <div class="field min-w-[15rem] flex-1">
+                <label class="label" for="q">Search</label>
+                <div class="relative">
+                    <i class="bi bi-search pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground"></i>
+                    <input id="q" name="q" value="{{ query }}" class="input pl-9" placeholder="Name, code, or barcode">
+                </div>
+            </div>
+            <div class="field min-w-[11rem]">
+                <label class="label" for="category">Category</label>
+                <select id="category" name="category" class="select">
+                    <option value="">All categories</option>
+                    {% for category in categories %}
+                    <option value="{{ category.pk }}" {% if selected_category == category.pk|stringformat:"s" %}selected{% endif %}>{{ category.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="field min-w-[10rem]">
+                <label class="label" for="state">Status</label>
+                <select id="state" name="state" class="select">
+                    <option value="">All</option>
+                    <option value="active" {% if selected_state == 'active' %}selected{% endif %}>Active</option>
+                    <option value="low" {% if selected_state == 'low' %}selected{% endif %}>Low stock</option>
+                    <option value="inactive" {% if selected_state == 'inactive' %}selected{% endif %}>Inactive</option>
+                </select>
+            </div>
+            <div class="flex items-center gap-2 pb-0.5">
+                <button class="btn btn-outline"><i class="bi bi-funnel"></i> Filter</button>
+                {% if query or selected_category or selected_state %}<a href="{% url 'medicine_list' %}" class="btn btn-ghost">Clear</a>{% endif %}
+            </div>
+        </form>
+    </div>
+    <div class="card-content flush">
+        <div class="table-wrap">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Medicine</th>
+                        <th>Category</th>
+                        <th>Supplier</th>
+                        <th class="text-right">Stock</th>
+                        <th class="text-right">Price</th>
+                        <th>Status</th>
+                        <th class="text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for medicine in medicines %}
+                    <tr>
+                        <td>
+                            <div class="min-w-0">
+                                <p class="font-medium">{{ medicine.generic_name }}</p>
+                                <p class="mt-0.5 text-xs text-muted-foreground">
+                                    {{ medicine.brand_name|default:"Generic" }} · <span class="font-mono">{{ medicine.medicine_code }}</span>
+                                </p>
+                            </div>
+                        </td>
+                        <td class="text-muted-foreground">{{ medicine.category.name }}</td>
+                        <td class="text-muted-foreground">{{ medicine.supplier.name|default:"—" }}</td>
+                        <td class="text-right">
+                            {% if medicine.sellable_stock <= 0 %}
+                            <span class="badge badge-destructive">{{ medicine.sellable_stock }} {{ medicine.unit }}</span>
+                            {% elif medicine.is_low_stock %}
+                            <span class="badge badge-warning">{{ medicine.sellable_stock }} {{ medicine.unit }}</span>
+                            {% else %}
+                            <span class="font-medium tabular-nums">{{ medicine.sellable_stock }}</span> <span class="text-xs text-muted-foreground">{{ medicine.unit }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-right font-medium tabular-nums">₱{{ medicine.selling_price|floatformat:2 }}</td>
+                        <td>
+                            {% if medicine.status %}
+                            <span class="badge badge-success">Active</span>
+                            {% else %}
+                            <span class="badge badge-muted">Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-right">
+                            <div class="inline-flex items-center gap-1">
+                                {% if nav_perms.manage_inventory %}
+                                <a href="{% url 'medicine_edit' medicine.pk %}" class="btn btn-ghost btn-sm btn-icon" title="Edit" aria-label="Edit {{ medicine.generic_name }}"><i class="bi bi-pencil"></i></a>
+                                {% endif %}
+                                <a href="{% url 'inventory_list' %}?q={{ medicine.medicine_code }}" class="btn btn-ghost btn-sm">Batches</a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7">
+                            <div class="empty-state">
+                                <span class="empty-state-icon"><i class="bi bi-capsule"></i></span>
+                                <div class="empty-state-title">No medicines found</div>
+                                <div class="empty-state-description">Try adjusting your filters or add a new medicine to the catalog.</div>
+                                {% if nav_perms.manage_inventory %}<a href="{% url 'medicine_add' %}" class="btn btn-outline btn-sm mt-2"><i class="bi bi-plus-lg"></i> Add medicine</a>{% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% include 'partials/pagination.html' %}
+</section>
+{% endblock %}

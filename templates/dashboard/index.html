@@ -1,0 +1,330 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard - Pharmacy IMS{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block page_subtitle %}Live overview of sales, stock health, and expiry risk{% endblock %}
+{% block breadcrumbs %}
+<i class="bi bi-chevron-right text-[0.6rem]"></i>
+<span class="text-foreground">Overview</span>
+{% endblock %}
+{% block page_actions %}
+{% if nav_perms.sell %}
+<a href="{% url 'pos_index' %}" class="btn btn-primary"><i class="bi bi-cart-plus"></i> New Sale</a>
+{% endif %}
+{% if nav_perms.view_reports %}
+<a href="{% url 'reports_index' %}" class="btn btn-outline"><i class="bi bi-bar-chart-line"></i> Reports</a>
+{% endif %}
+{% endblock %}
+{% block content %}
+<div class="space-y-6">
+
+    <!-- KPI row -->
+    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div class="card">
+            <div class="card-content pt-6">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Today's Revenue</p>
+                        <p class="mt-2 text-3xl font-semibold tracking-tight tabular-nums">₱{{ today_sales|floatformat:2 }}</p>
+                        <p class="mt-1 text-xs text-muted-foreground">{{ today_transactions }} transaction{{ today_transactions|pluralize }} today</p>
+                    </div>
+                    <span class="page-icon text-emerald-600"><i class="bi bi-currency-dollar"></i></span>
+                </div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-content pt-6">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-widest text-muted-foreground">This Month</p>
+                        <p class="mt-2 text-3xl font-semibold tracking-tight tabular-nums">₱{{ month_sales|floatformat:2 }}</p>
+                        <p class="mt-1 text-xs text-muted-foreground">Avg basket ₱{{ avg_basket|floatformat:2 }}</p>
+                    </div>
+                    <span class="page-icon text-sky-600"><i class="bi bi-graph-up-arrow"></i></span>
+                </div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-content pt-6">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Inventory Value</p>
+                        <p class="mt-2 text-3xl font-semibold tracking-tight tabular-nums">₱{{ inventory_value|floatformat:2 }}</p>
+                        <p class="mt-1 text-xs text-muted-foreground">{{ total_medicines }} active medicine{{ total_medicines|pluralize }}</p>
+                    </div>
+                    <span class="page-icon text-indigo-600"><i class="bi bi-box-seam"></i></span>
+                </div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-content pt-6">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Needs Attention</p>
+                        <p class="mt-2 text-3xl font-semibold tracking-tight tabular-nums text-rose-600">{{ low_stock_count }}</p>
+                        <p class="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+                            <span>{{ expired_count }} expired</span>
+                            <span aria-hidden="true">·</span>
+                            <span>{{ near_expiry|length }} near expiry</span>
+                            <span aria-hidden="true">·</span>
+                            <span>{{ pending_purchases }} pending PO</span>
+                        </p>
+                    </div>
+                    <span class="page-icon text-rose-600"><i class="bi bi-exclamation-triangle"></i></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Trend + category mix -->
+    <div class="grid gap-6 lg:grid-cols-3">
+        <section class="card lg:col-span-2">
+            <div class="card-header">
+                <div>
+                    <h2 class="card-title">Sales Trend</h2>
+                    <p class="card-description">Revenue over the last 30 days</p>
+                </div>
+                <span class="badge badge-secondary">{{ chart_values|length }} days</span>
+            </div>
+            <div class="card-content">
+                <div id="salesChart" class="flex h-48 items-end gap-1" data-values="{{ chart_values|join:',' }}" data-labels="{{ chart_labels|join:'|' }}" role="img" aria-label="Bar chart of revenue over the last 30 days"></div>
+                <div class="mt-3 flex items-center justify-between text-[11px] text-muted-foreground">
+                    <span>{{ chart_labels|first }}</span>
+                    <span>Hover a bar for the daily total</span>
+                    <span>{{ chart_labels|last }}</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="card-header">
+                <div>
+                    <h2 class="card-title">Category Mix</h2>
+                    <p class="card-description">Units on hand by category</p>
+                </div>
+            </div>
+            <div class="card-content">
+                {% if category_rows %}
+                {% with max_qty=category_rows.0.qty %}
+                <div class="space-y-4">
+                    {% for row in category_rows %}
+                    <div>
+                        <div class="mb-1.5 flex items-center justify-between gap-2 text-sm">
+                            <span class="truncate font-medium">{{ row.medicine__category__name|default:"Uncategorised" }}</span>
+                            <span class="shrink-0 tabular-nums text-muted-foreground">{{ row.qty }}</span>
+                        </div>
+                        <div class="h-2 w-full overflow-hidden rounded-full bg-muted">
+                            <div class="h-full rounded-full bg-gradient-to-r from-primary to-emerald-500" data-cycle-width="{{ row.qty }}" data-cycle-max="{{ max_qty }}"></div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endwith %}
+                {% else %}
+                <div class="empty-state">
+                    <span class="empty-state-icon"><i class="bi bi-pie-chart"></i></span>
+                    <div class="empty-state-title">No stock yet</div>
+                    <div class="empty-state-description">Category distribution appears once batches are received.</div>
+                </div>
+                {% endif %}
+            </div>
+        </section>
+    </div>
+
+    <!-- Recent sales + low stock -->
+    <div class="grid gap-6 lg:grid-cols-3">
+        <section class="card lg:col-span-2">
+            <div class="card-header">
+                <div>
+                    <h2 class="card-title">Recent Transactions</h2>
+                    <p class="card-description">Latest completed sales</p>
+                </div>
+                <a href="{% url 'sales_list' %}" class="btn btn-ghost btn-sm">View all <i class="bi bi-arrow-right"></i></a>
+            </div>
+            <div class="card-content flush">
+                <div class="table-wrap">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Invoice</th>
+                                <th>Customer</th>
+                                <th>Cashier</th>
+                                <th class="text-right">Amount</th>
+                                <th>Time</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for sale in recent_sales %}
+                            <tr>
+                                <td><a href="{% url 'sale_view' sale.pk %}" class="font-mono text-xs font-medium text-primary hover:underline">{{ sale.invoice_no }}</a></td>
+                                <td class="font-medium">{{ sale.customer_name|default:"Walk-in" }}</td>
+                                <td class="text-muted-foreground">{{ sale.sold_by.get_full_name|default:sale.sold_by.username }}</td>
+                                <td class="text-right font-medium tabular-nums">₱{{ sale.total_amount|floatformat:2 }}</td>
+                                <td class="whitespace-nowrap text-muted-foreground">{{ sale.created_at|date:"M d, h:i A" }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5">
+                                    <div class="empty-state">
+                                        <span class="empty-state-icon"><i class="bi bi-receipt"></i></span>
+                                        <div class="empty-state-title">No transactions yet</div>
+                                        <div class="empty-state-description">New sales will appear here in real time.</div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="card-header">
+                <div>
+                    <h2 class="card-title">Low Stock</h2>
+                    <p class="card-description">At or below reorder level</p>
+                </div>
+                <a href="{% url 'alerts' %}" class="btn btn-ghost btn-sm">Alerts</a>
+            </div>
+            <div class="card-content">
+                <div class="space-y-4">
+                    {% for med in low_stock|slice:":6" %}
+                    <div class="flex items-center justify-between gap-3">
+                        <div class="min-w-0">
+                            <p class="truncate text-sm font-medium">{{ med.generic_name }}</p>
+                            <p class="text-xs text-muted-foreground">{{ med.category.name }}</p>
+                        </div>
+                        <div class="shrink-0 text-right">
+                            <span class="badge badge-destructive">{{ med.sellable_stock }} {{ med.unit }}</span>
+                            <p class="mt-1 text-[11px] text-muted-foreground">Reorder {{ med.reorder_level }}</p>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="empty-state">
+                        <span class="empty-state-icon text-emerald-600"><i class="bi bi-check-lg"></i></span>
+                        <div class="empty-state-title">All stocked up</div>
+                        <div class="empty-state-description">No medicines are below their reorder level.</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Top medicines + expiry watch -->
+    <div class="grid gap-6 lg:grid-cols-2">
+        <section class="card">
+            <div class="card-header">
+                <div>
+                    <h2 class="card-title">Top Medicines</h2>
+                    <p class="card-description">Best sellers in the last 30 days</p>
+                </div>
+            </div>
+            <div class="card-content flush">
+                <div class="table-wrap">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Medicine</th>
+                                <th class="text-right">Qty sold</th>
+                                <th class="text-right">Revenue</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in top_medicines %}
+                            <tr>
+                                <td class="font-medium">{{ row.medicine__generic_name }}</td>
+                                <td class="text-right tabular-nums">{{ row.qty }}</td>
+                                <td class="text-right font-medium tabular-nums">₱{{ row.revenue|floatformat:2 }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="3" class="p-0">
+                            <div class="empty-state">
+                                <span class="empty-state-icon"><i class="bi bi-capsule"></i></span>
+                                <div class="empty-state-title">No sales yet</div>
+                                <div class="empty-state-description">Top sellers will appear once transactions are recorded.</div>
+                            </div>
+                        </td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="card-header">
+                <div>
+                    <h2 class="card-title">Expiry Watch</h2>
+                    <p class="card-description">Batches expiring soonest</p>
+                </div>
+                <a href="{% url 'alerts' %}" class="btn btn-ghost btn-sm">All alerts</a>
+            </div>
+            <div class="card-content flush">
+                <div class="table-wrap">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Medicine</th>
+                                <th>Batch</th>
+                                <th>Expiry</th>
+                                <th class="text-right">Qty</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for batch in near_expiry %}
+                            <tr>
+                                <td class="font-medium">{{ batch.medicine.generic_name }}</td>
+                                <td class="font-mono text-xs text-muted-foreground">{{ batch.batch_no }}</td>
+                                <td>
+                                    {% if batch.days_to_expire <= 30 %}<span class="badge badge-destructive">{{ batch.expiry_date|date:"M d" }}</span>
+                                    {% else %}<span class="badge badge-warning">{{ batch.expiry_date|date:"M d" }}</span>{% endif %}
+                                </td>
+                                <td class="text-right tabular-nums">{{ batch.remaining_quantity }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="4" class="p-0">
+                            <div class="empty-state">
+                                <span class="empty-state-icon"><i class="bi bi-calendar-x"></i></span>
+                                <div class="empty-state-title">No batches nearing expiry</div>
+                                <div class="empty-state-description">No batches fall inside the current warning window.</div>
+                            </div>
+                        </td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+(function () {
+    var chart = document.getElementById('salesChart');
+    if (!chart) return;
+    var values = (chart.dataset.values || '').split(',').map(function (v) { return parseFloat(v) || 0; });
+    var labels = (chart.dataset.labels || '').split('|');
+    var max = Math.max.apply(null, values.concat([1]));
+
+    values.forEach(function (value, index) {
+        var bar = document.createElement('div');
+        var pct = Math.max((value / max) * 100, value > 0 ? 6 : 2);
+        bar.className = 'group relative flex-1 rounded-t-md bg-gradient-to-t from-primary/70 to-emerald-400 transition-colors duration-200 hover:from-primary hover:to-emerald-300';
+        bar.style.height = pct + '%';
+        var tip = document.createElement('div');
+        tip.className = 'pointer-events-none absolute -top-9 left-1/2 z-10 hidden -translate-x-1/2 whitespace-nowrap rounded-md bg-slate-900 px-2 py-1 text-[10px] font-medium text-white group-hover:block';
+        tip.textContent = (labels[index] || '') + ' · ₱' + value.toFixed(2);
+        bar.appendChild(tip);
+        chart.appendChild(bar);
+    });
+
+    document.querySelectorAll('[data-cycle-width]').forEach(function (el) {
+        var value = parseFloat(el.dataset.cycleWidth) || 0;
+        var max = parseFloat(el.dataset.cycleMax) || 1;
+        el.style.width = Math.max((value / max) * 100, 3) + '%';
+    });
+})();
+</script>
+{% endblock %}

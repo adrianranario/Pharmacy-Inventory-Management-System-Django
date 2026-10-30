@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+{% block title %}Sale {{ sale.invoice_no }} - Pharmacy IMS{% endblock %}
+{% block page_title %}Sale details{% endblock %}
+{% block page_subtitle %}{{ sale.invoice_no }} · {{ sale.created_at|date:"M d, Y H:i" }}{% endblock %}
+{% block breadcrumbs %}
+<i class="bi bi-chevron-right text-[0.6rem]"></i>
+<a href="{% url 'sales_list' %}" class="transition-colors hover:text-foreground">Sales</a>
+<i class="bi bi-chevron-right text-[0.6rem]"></i>
+<span class="text-foreground">{{ sale.invoice_no }}</span>
+{% endblock %}
+{% block page_actions %}
+<a href="{% url 'sales_list' %}" class="btn btn-outline"><i class="bi bi-arrow-left"></i> Back</a>
+<a href="{% url 'pos_receipt' sale.pk %}" class="btn btn-outline" target="_blank"><i class="bi bi-printer"></i> Receipt</a>
+{% if sale.is_refundable and nav_perms.refund %}<a href="{% url 'sale_return' sale.pk %}" class="btn btn-primary"><i class="bi bi-arrow-return-left"></i> Process return</a>{% endif %}
+{% endblock %}
+{% block content %}
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
+    <div class="space-y-6">
+        <section class="card">
+            <div class="card-header row border-b border-border">
+                <div>
+                    <h2 class="card-title">{{ sale.invoice_no }}</h2>
+                    <p class="card-description">OR {{ sale.or_number|default:"—" }} · {{ sale.get_payment_method_display }}{% if sale.payment_reference %} · Ref {{ sale.payment_reference }}{% endif %}</p>
+                </div>
+                {% if sale.status == 'completed' %}<span class="badge badge-success">Completed</span>
+                {% elif sale.status == 'partially_returned' %}<span class="badge badge-warning">Partially returned</span>
+                {% elif sale.status == 'returned' %}<span class="badge badge-muted">Returned</span>
+                {% else %}<span class="badge badge-destructive">Voided</span>{% endif %}
+            </div>
+            <div class="card-content flush">
+                <div class="table-wrap">
+                    <table class="table">
+                        <thead><tr><th>Medicine</th><th>Batch</th><th class="text-right">Qty</th><th class="text-right">Returned</th><th class="text-right">Price</th><th class="text-right">Subtotal</th></tr></thead>
+                        <tbody>
+                            {% for item in sale.items.all %}
+                            <tr>
+                                <td class="font-medium">{{ item.medicine.generic_name }}</td>
+                                <td class="font-mono text-xs">{{ item.batch.batch_no }}</td>
+                                <td class="text-right">{{ item.quantity }}</td>
+                                <td class="text-right">{% if item.returned_quantity %}<span class="text-rose-600">{{ item.returned_quantity }}</span>{% else %}—{% endif %}</td>
+                                <td class="text-right">₱{{ item.price|floatformat:2 }}</td>
+                                <td class="text-right font-medium">₱{{ item.subtotal|floatformat:2 }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="card-content space-y-1 border-t border-border text-sm">
+                <div class="flex justify-between"><span class="text-muted-foreground">Subtotal</span><span>₱{{ sale.subtotal|floatformat:2 }}</span></div>
+                {% if sale.discount_amount %}<div class="flex justify-between"><span class="text-muted-foreground">Discount ({{ sale.discount_rate|floatformat:0 }}%)</span><span class="text-rose-600">−₱{{ sale.discount_amount|floatformat:2 }}</span></div>{% endif %}
+                {% if sale.vat_exempt %}<div class="flex justify-between"><span class="text-muted-foreground">VAT exempt</span><span>₱{{ sale.vat_exempt|floatformat:2 }}</span></div>{% endif %}
+                <div class="flex justify-between"><span class="text-muted-foreground">Total</span><span class="font-semibold">₱{{ sale.total_amount|floatformat:2 }}</span></div>
+                <div class="flex justify-between"><span class="text-muted-foreground">Paid</span><span>₱{{ sale.amount_paid|floatformat:2 }}</span></div>
+                <div class="flex justify-between"><span class="text-muted-foreground">Change</span><span>₱{{ sale.change_amount|floatformat:2 }}</span></div>
+                {% if sale.refunded_amount %}<div class="flex justify-between text-rose-600"><span>Refunded</span><span>−₱{{ sale.refunded_amount|floatformat:2 }}</span></div>{% endif %}
+                <div class="flex justify-between border-t border-border pt-2 text-base"><span class="font-medium">Net</span><span class="font-semibold">₱{{ sale.net_total|floatformat:2 }}</span></div>
+            </div>
+        </section>
+
+        {% if sale.returns.exists %}
+        <section class="card">
+            <div class="card-header border-b border-border"><h2 class="card-title">Returns</h2></div>
+            <div class="card-content flush">
+                <div class="table-wrap">
+                    <table class="table">
+                        <thead><tr><th>Return</th><th>Date</th><th>Reason</th><th>Processed by</th><th class="text-right">Refund</th></tr></thead>
+                        <tbody>
+                            {% for ret in sale.returns.all %}
+                            <tr>
+                                <td class="font-mono text-xs font-medium">{{ ret.return_no }}</td>
+                                <td class="text-muted-foreground">{{ ret.created_at|date:"M d, Y H:i" }}</td>
+                                <td>{{ ret.reason }}</td>
+                                <td class="text-muted-foreground">{{ ret.processed_by.username }}</td>
+                                <td class="text-right font-medium">₱{{ ret.total_amount|floatformat:2 }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+        {% endif %}
+    </div>
+
+    <div class="space-y-6">
+        <section class="card">
+            <div class="card-header"><h2 class="card-title">Customer</h2></div>
+            <div class="card-content space-y-2 text-sm">
+                {% if sale.customer %}<a href="{% url 'customer_detail' sale.customer.pk %}" class="font-medium hover:underline">{{ sale.customer.name }}</a>
+                {% else %}<p class="font-medium">{{ sale.customer_name|default:"Walk-in" }}</p>{% endif %}
+                <p class="text-muted-foreground">{{ sale.get_customer_type_display }}{% if sale.id_no %} · ID {{ sale.id_no }}{% endif %}</p>
+                <p class="text-muted-foreground">Cashier: {{ sale.sold_by.get_full_name|default:sale.sold_by.username }}</p>
+                {% if sale.voided_at %}<p class="text-rose-600">Voided {{ sale.voided_at|date:"M d, Y H:i" }} by {{ sale.voided_by.username|default:"—" }}</p><p class="text-rose-600">{{ sale.void_reason }}</p>{% endif %}
+            </div>
+        </section>
+
+        {% if sale.status == 'completed' and nav_perms.void_sale %}
+        <details class="card">
+            <summary class="card-header cursor-pointer list-none"><h2 class="card-title text-rose-600">Void this sale</h2></summary>
+            <form method="post" action="{% url 'sale_void' sale.pk %}" onsubmit="return confirm('Void this sale and restore stock?');">
+                {% csrf_token %}
+                <div class="card-content space-y-3">
+                    <p class="text-xs text-muted-foreground">Voiding restores every item to its batch and marks the sale voided. This cannot be undone.</p>
+                    {% include 'partials/form_fields.html' with form=void_form %}
+                </div>
+                <div class="card-footer border-t border-border"><button class="btn btn-destructive w-full"><i class="bi bi-x-octagon"></i> Void sale</button></div>
+            </form>
+        </details>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

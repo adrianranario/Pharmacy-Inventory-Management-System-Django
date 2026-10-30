@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+{% block title %}Sign in - Pharmacy IMS{% endblock %}
+{% block auth_content %}
+<div class="grid min-h-screen lg:grid-cols-[1.05fr_1fr]">
+
+    <!-- Brand panel -->
+    <div class="relative hidden overflow-hidden bg-gradient-to-br from-emerald-900 via-emerald-800 to-teal-900 p-12 text-white lg:flex lg:flex-col lg:justify-between">
+        <div class="pointer-events-none absolute -right-24 -top-24 h-96 w-96 rounded-full bg-emerald-400/20 blur-3xl"></div>
+        <div class="pointer-events-none absolute -bottom-32 -left-16 h-96 w-96 rounded-full bg-sky-400/20 blur-3xl"></div>
+
+        <div class="relative flex items-center gap-3">
+            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 ring-1 ring-white/20 backdrop-blur">
+                <i class="bi bi-capsule-pill text-lg"></i>
+            </div>
+            <div>
+                <p class="font-display text-lg font-semibold leading-tight">{{ pharmacy.name|default:"Pharmacy IMS" }}</p>
+                <p class="text-[11px] uppercase tracking-[0.2em] text-emerald-200/80">Inventory Suite</p>
+            </div>
+        </div>
+
+        <div class="relative max-w-md">
+            <h2 class="font-display text-4xl font-semibold leading-tight tracking-tight">Calm control over every batch, sale, and expiry date.</h2>
+            <p class="mt-4 text-sm leading-relaxed text-emerald-100/80">A premium workspace for pharmacists and staff — FEFO-aware dispensing, real-time stock health, and audit-ready records in one place.</p>
+
+            <div class="mt-10 space-y-4">
+                <div class="flex items-start gap-3">
+                    <span class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/10 ring-1 ring-white/15"><i class="bi bi-box-seam"></i></span>
+                    <div>
+                        <p class="text-sm font-medium">Batch-level accuracy</p>
+                        <p class="text-xs text-emerald-100/70">Expiry-first allocation on every sale.</p>
+                    </div>
+                </div>
+                <div class="flex items-start gap-3">
+                    <span class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/10 ring-1 ring-white/15"><i class="bi bi-shield-check"></i></span>
+                    <div>
+                        <p class="text-sm font-medium">Role-based access</p>
+                        <p class="text-xs text-emerald-100/70">Cashier, clerk, pharmacist, and admin permissions.</p>
+                    </div>
+                </div>
+                <div class="flex items-start gap-3">
+                    <span class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/10 ring-1 ring-white/15"><i class="bi bi-graph-up-arrow"></i></span>
+                    <div>
+                        <p class="text-sm font-medium">Decision-ready insight</p>
+                        <p class="text-xs text-emerald-100/70">Low stock, near expiry, and demand forecasting.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <p class="relative text-xs text-emerald-200/60">&copy; {% now "Y" %} {{ pharmacy.name|default:"Pharmacy IMS" }} · Secure session</p>
+    </div>
+
+    <!-- Form panel -->
+    <div class="flex items-center justify-center bg-gradient-to-br from-background via-background to-emerald-50/40 px-4 py-12 sm:px-8">
+        <div class="w-full max-w-sm">
+            <div class="mb-8 flex items-center gap-3 lg:hidden">
+                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-emerald-600 text-primary-foreground shadow-glow">
+                    <i class="bi bi-capsule-pill text-lg"></i>
+                </div>
+                <div>
+                    <p class="font-display text-base font-semibold leading-tight">{{ pharmacy.name|default:"Pharmacy IMS" }}</p>
+                    <p class="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Inventory Suite</p>
+                </div>
+            </div>
+
+            <div class="mb-7">
+                <p class="text-xs font-semibold uppercase tracking-widest text-primary">Welcome back</p>
+                <h1 class="mt-2 font-display text-3xl font-semibold tracking-tight">Sign in to continue</h1>
+                <p class="mt-2 text-sm text-muted-foreground">Use your staff credentials to access the pharmacy workspace.</p>
+            </div>
+
+            {% if form.non_field_errors or form.errors %}
+            <div class="alert alert-destructive mb-5">
+                <i class="bi bi-exclamation-octagon mt-0.5"></i>
+                <div>
+                    <p class="alert-title">Unable to sign in</p>
+                    <p class="alert-description">Check your username and password, then try again.</p>
+                </div>
+            </div>
+            {% endif %}
+
+            <form method="post" class="space-y-5">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ next }}">
+                <div class="field">
+                    <label class="label" for="id_username">Username</label>
+                    <div class="relative">
+                        <i class="bi bi-person pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground"></i>
+                        <input class="input pl-9" id="id_username" name="username" autocomplete="username" required autofocus>
+                    </div>
+                </div>
+                <div class="field">
+                    <div class="flex items-center justify-between">
+                        <label class="label" for="id_password">Password</label>
+                        <a href="{% url 'password_reset' %}" class="text-xs font-medium text-primary hover:underline">Forgot password?</a>
+                    </div>
+                    <div class="relative">
+                        <i class="bi bi-lock pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground"></i>
+                        <input class="input pl-9" id="id_password" type="password" name="password" autocomplete="current-password" required>
+                    </div>
+                </div>
+                <button class="btn btn-primary h-11 w-full text-[0.9375rem]">
+                    <i class="bi bi-box-arrow-in-right"></i> Sign in
+                </button>
+            </form>
+
+            <div class="mt-6 rounded-xl border border-border/70 bg-muted/40 p-3 text-center">
+                <p class="text-xs text-muted-foreground">Need help? Contact your pharmacy administrator to reset access.</p>
+            </div>
+            <p class="mt-6 text-center text-[11px] text-muted-foreground">Protected by two-factor authentication where enabled.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

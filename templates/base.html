@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Pharmacy IMS{% endblock %}</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='12' fill='url(%23g)'/%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='32' y2='32'%3E%3Cstop stop-color='%2315803D'/%3E%3Cstop offset='1' stop-color='%2303669A'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M16 9v14M9 16h14' stroke='%23fff' stroke-width='2.5' stroke-linecap='round'/%3E%3C/svg%3E">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'],
+                        display: ['Playfair Display', 'Georgia', 'serif'],
+                    },
+                    colors: {
+                        border: 'hsl(var(--border))',
+                        input: 'hsl(var(--input))',
+                        ring: 'hsl(var(--ring))',
+                        background: 'hsl(var(--background))',
+                        foreground: 'hsl(var(--foreground))',
+                        primary: {
+                            DEFAULT: 'hsl(var(--primary))',
+                            foreground: 'hsl(var(--primary-foreground))',
+                        },
+                        secondary: {
+                            DEFAULT: 'hsl(var(--secondary))',
+                            foreground: 'hsl(var(--secondary-foreground))',
+                        },
+                        destructive: {
+                            DEFAULT: 'hsl(var(--destructive))',
+                            foreground: 'hsl(var(--destructive-foreground))',
+                        },
+                        muted: {
+                            DEFAULT: 'hsl(var(--muted))',
+                            foreground: 'hsl(var(--muted-foreground))',
+                        },
+                        accent: {
+                            DEFAULT: 'hsl(var(--accent))',
+                            foreground: 'hsl(var(--accent-foreground))',
+                        },
+                        card: {
+                            DEFAULT: 'hsl(var(--card))',
+                            foreground: 'hsl(var(--card-foreground))',
+                        },
+                    },
+                    borderRadius: {
+                        lg: 'var(--radius)',
+                        md: 'calc(var(--radius) - 2px)',
+                        sm: 'calc(var(--radius) - 4px)',
+                    },
+                    boxShadow: {
+                        'soft': '0 1px 2px 0 rgb(16 24 40 / 0.04), 0 1px 3px 0 rgb(16 24 40 / 0.06)',
+                        'glow': '0 0 0 1px rgb(21 128 61 / 0.05), 0 4px 12px -2px rgb(21 128 61 / 0.18)',
+                    },
+                },
+            },
+        }
+    </script>
+    <link rel="stylesheet" href="{% static 'css/app.css' %}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="min-h-screen bg-gradient-to-br from-background via-background to-emerald-50/30 font-sans text-foreground antialiased">
+    {% if user.is_authenticated %}
+    {% with url_name=request.resolver_match.url_name %}
+    <div class="min-h-screen w-full lg:grid lg:grid-cols-[280px_minmax(0,1fr)]">
+
+        <!-- Mobile overlay -->
+        <div id="navOverlay" class="fixed inset-0 z-40 hidden bg-slate-950/40 backdrop-blur-sm lg:hidden" data-nav-close></div>
+
+        <!-- Sidebar -->
+        <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 flex w-[280px] -translate-x-full flex-col border-r border-border/60 bg-card transition-transform duration-300 ease-out lg:sticky lg:top-0 lg:h-screen lg:translate-x-0">
+            <div class="flex h-16 shrink-0 items-center justify-between border-b border-border/60 px-5">
+                <a href="{% url 'dashboard' %}" class="flex items-center gap-3">
+                    <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-emerald-600 text-primary-foreground shadow-glow">
+                        <i class="bi bi-capsule-pill text-lg"></i>
+                    </div>
+                    <div>
+                        <div class="font-display text-base font-semibold leading-tight tracking-tight">{{ pharmacy.name|default:"Pharmacy IMS" }}</div>
+                        <div class="text-[11px] font-medium uppercase tracking-widest text-muted-foreground">Inventory Suite</div>
+                    </div>
+                </a>
+                <button type="button" class="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent lg:hidden" data-nav-close aria-label="Close navigation">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto px-3 py-5">
+                <nav class="space-y-6">
+                    <div>
+                        <p class="mb-2 px-3 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/70">Overview</p>
+                        <div class="space-y-0.5">
+                            <a href="{% url 'dashboard' %}" class="group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground {% if url_name == 'dashboard' %}!bg-gradient-to-r !from-primary/10 !to-transparent !text-primary{% endif %}">
+                                <i class="bi bi-grid-1x2 text-base {% if url_name == 'dashboard' %}text-primary{% endif %}"></i>
+                                <span>Dashboard</span>
+                            </a>
+                            {% if nav_perms.sell %}
+                            <a href="{% url 'pos_index' %}" class="group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground {% if url_name == 'pos_index' %}!bg-gradient-to-r !from-primary/10 !to-transparent !text-primary{% endif %}">
+                                <i class="bi bi-cart3 text-base {% if url_name == 'pos_index' %}text-primary{% endif %}"></i>
+                                <span>Point of Sale</span>
+                            </a>
+                            {% endif %}
+                            {% if nav_perms.use_assistant %}
+                            <a href="{% url 'assistant_index' %}" class="group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground {% if 'assistant' in url_name %}!bg-gradient-to-r !from-primary/10 !to-transparent !text-primary{% endif %}">
+                                <i class="bi bi-stars text-base {% if 'assistant' in url_name %}text-primary{% endif %}"></i>
+                                <span>Assistant</span>
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    {% if nav_perms.manage_inventory %}
+                    <div>
+                        <p class="mb-2 px-3 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/70">Inventory</p>
+                        <div class="space-y-0.5">
+                            <a href="{% url 'medicine_list' %}" class="group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground {% if url_name == 'medicine_list' or url_name == 'medicine_add' or url_name == 'medicine_edit' %}!bg-gradient-to-r !from-primary/10 !to-transparent !text-primary{% endif %}">
+                                <i class="bi bi-capsule text-base"></i>
+                                <span>Medicines</span>
+                            </a>
+                            <a href="{% url 'category_list' %}" class="group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground {% if 'category' in url_name %}!bg-gradient-to-r !from-primary/10 !to-transparent !text-primary{% endif %}">
+                                <i class="bi bi-tags text-base"></i>
+                                <span>Categories</span>
+                            </a>
+                            <a href="{% url 'supplier_list' %}" class="group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground {% if 'supplier' in url_name %}!bg-gradient-to-r !from-primary/10 !to-transparent !text-primary{% endif %}">
+                                <i class="bi bi-truck text-base"></i>
+                                <span>Suppliers</span>
+                            </a>
+                            <a href="{% url 'inventory_list' %}" class="group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground {% if url_name == 'inventory_list' or url_name == 'adjust_stock' %}!bg-gradient-to-r !from-primary/10 !to-transparent !text-primary{% endif %}">
+                                <i class="bi bi-box-seam text-base"></i>
+                                <span>Stock</span>
+                            </a>
+                            <a href="{% url 'stock_movements' %}" class="group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground {% if url_name == 'stock_movements' %}!bg-gradient-to-r !from-primary/10 !to-transparent !text-primary{% endif %}">
+                                <i class="bi bi-arrow-left-right text-base"></i>
+                                <span>Stock Ledger</span>
+                            </a>
+                            <a href="{% url 'alerts' %}" class="group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground {% if url_name == 'alerts' %}!bg-gradient-to-r !from-primary/10 !to-transparent !text-primary{% endif %}">
+                                <i class="bi bi-bell text-base"></i>
+                                <span>Alerts</span>
+                                {% if alert_counts.total %}<span class="ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1.5 text-[11px] font-semibold text-destructive-foreground">{{ alert_counts.total }}</span>{% endif %}
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <div>
+                        <p class="mb-2 px-3 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/70">Transactions</p>
+                        <div class="space-y-0.5">
+                            {% if nav_perms.manage_purchases %}
+                            <a href="{% url 'purchase_list' %}" class="group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground {% if 'purchase' in url_name %}!bg-gradient-to-r !from-primary/10 !to-transparent !text-primary{% endif %}">
+                                <i class="bi bi-bag-plus text-base"></i>
+                                <span>Purchases</span>
+                            </a>
+                            {% endif %}
+                            {% if nav_perms.view_sales %}
+                            <a href="{% url 'sales_list' %}" class="group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground {% if 'sale' in url_name %}!bg-gradient-to-r !from-primary/10 !to-transparent !text-primary{% endif %}">
+                                <i class="bi bi-receipt text-base"></i>
+                                <span>Sales History</span>
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    {% if nav_perms.view_customers %}
+                    <div>
+                        <p class="mb-2 px-3 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/70">Customers</p>
+                        <div class="space-y-0.5">
+                            <a href="{% url 'customer_list' %}" class="group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground {% if url_name == 'customer_list' or url_name == 'customer_add' or url_name == 'customer_edit' or url_name == 'customer_detail' %}!bg-gradient-to-r !from-primary/10 !to-transparent !text-primary{% endif %}">
+                                <i class="bi bi-people text-base"></i>
+                                <span>Customers</span>
+                            </a>
+                            <a href="{% url 'prescription_list' %}" class="group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground {% if 'prescription' in url_name %}!bg-gradient-to-r !from-primary/10 !to-transparent !text-primary{% endif %}">
+                                <i class="bi bi-file-medical text-base"></i>
+                                <span>Prescriptions</span>
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <div>
+                        <p class="mb-2 px-3 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/70">Insights</p>
+                        <div class="space-y-0.5">
+                            {% if nav_perms.view_reports %}
+                            <a href="{% url 'reports_index' %}" class="group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground {% if 'report' in url_name %}!bg-gradient-to-r !from-primary/10 !to-transparent !text-primary{% endif %}">
+                                <i class="bi bi-bar-chart-line text-base"></i>
+                                <span>Reports</span>
+                            </a>
+                            <a href="{% url 'forecast_index' %}" class="group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground {% if 'forecast' in url_name %}!bg-gradient-to-r !from-primary/10 !to-transparent !text-primary{% endif %}">
+                                <i class="bi bi-graph-up-arrow text-base"></i>
+                                <span>Demand Forecast</span>
+                            </a>
+                            {% endif %}
+                            {% if nav_perms.manage_users %}
+                            <a href="{% url 'user_list' %}" class="group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground {% if url_name == 'user_list' or url_name == 'user_add' or url_name == 'user_edit' %}!bg-gradient-to-r !from-primary/10 !to-transparent !text-primary{% endif %}">
+                                <i class="bi bi-shield-lock text-base"></i>
+                                <span>Users</span>
+                            </a>
+                            {% endif %}
+                            {% if nav_perms.view_audit %}
+                            <a href="{% url 'audit_log' %}" class="group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground {% if url_name == 'audit_log' %}!bg-gradient-to-r !from-primary/10 !to-transparent !text-primary{% endif %}">
+                                <i class="bi bi-clock-history text-base"></i>
+                                <span>Audit Log</span>
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </nav>
+            </div>
+
+            <div class="shrink-0 border-t border-border/60 p-3">
+                <a href="{% url 'security_settings' %}" class="flex items-center gap-3 rounded-xl border border-border/60 bg-muted/40 p-2.5 transition-colors hover:bg-accent">
+                    <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-emerald-600 text-primary-foreground">
+                        <span class="text-sm font-semibold">{{ user.username|slice:":1"|upper }}</span>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <p class="truncate text-sm font-medium">{{ user.get_full_name|default:user.username }}</p>
+                        <p class="truncate text-xs text-muted-foreground">{{ user.get_role_display }}</p>
+                    </div>
+                    <i class="bi bi-gear text-muted-foreground"></i>
+                </a>
+                <form method="post" action="{% url 'logout' %}" class="mt-2">
+                    {% csrf_token %}
+                    <button class="flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive">
+                        <i class="bi bi-box-arrow-right"></i>
+                        Sign out
+                    </button>
+                </form>
+            </div>
+        </aside>
+
+        <div class="flex min-h-screen min-w-0 flex-col">
+            <header class="sticky top-0 z-30 border-b border-border/60 bg-card/85 backdrop-blur-xl">
+                <div class="flex min-h-16 flex-wrap items-center gap-3 px-4 py-2.5 sm:px-6 lg:px-8">
+                    <button type="button" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border/60 text-muted-foreground transition-colors hover:bg-accent lg:hidden" data-nav-open aria-label="Open navigation">
+                        <i class="bi bi-list text-lg"></i>
+                    </button>
+
+                    <div class="min-w-0 flex-1">
+                        <nav class="mb-0.5 hidden items-center gap-1.5 text-[11px] font-medium text-muted-foreground sm:flex" aria-label="Breadcrumb">
+                            <a href="{% url 'dashboard' %}" class="transition-colors hover:text-foreground">Home</a>
+                            {% block breadcrumbs %}{% endblock %}
+                        </nav>
+                        <h1 class="truncate font-display text-xl font-semibold tracking-tight">{% block page_title %}Dashboard{% endblock %}</h1>
+                        <p class="mt-0.5 truncate text-xs text-muted-foreground">{% block page_subtitle %}{% endblock %}</p>
+                    </div>
+
+                    <div class="flex w-full flex-nowrap items-center justify-start gap-2 overflow-x-auto pb-0.5 sm:w-auto sm:flex-wrap sm:justify-end sm:overflow-visible sm:pb-0">
+                        {% block page_actions %}{% endblock %}
+                        <form method="post" action="{% url 'logout' %}" class="shrink-0">
+                            {% csrf_token %}
+                            <button type="submit" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border/60 bg-card text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive" title="Sign out" aria-label="Sign out">
+                                <i class="bi bi-box-arrow-right"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </header>
+
+            <main class="flex-1 px-4 py-6 sm:px-6 lg:px-8">
+                {% if messages %}
+                <div class="mb-6 space-y-3">
+                    {% for message in messages %}
+                    <div class="flex items-start gap-3 rounded-xl border p-4 shadow-soft {% if message.tags == 'success' %}border-emerald-200 bg-emerald-50 text-emerald-900{% elif message.tags == 'error' or message.tags == 'danger' %}border-red-200 bg-red-50 text-red-900{% elif message.tags == 'warning' %}border-amber-200 bg-amber-50 text-amber-900{% else %}border-border bg-card{% endif %}">
+                        <i class="bi mt-0.5 {% if message.tags == 'success' %}bi-check-circle{% elif message.tags == 'error' or message.tags == 'danger' %}bi-x-circle{% elif message.tags == 'warning' %}bi-exclamation-triangle{% else %}bi-info-circle{% endif %}"></i>
+                        <span class="text-sm font-medium">{{ message }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                {% block content %}{% endblock %}
+            </main>
+
+            <footer class="border-t border-border/60 px-4 py-4 text-xs text-muted-foreground sm:px-6 lg:px-8">
+                <div class="flex flex-col items-center justify-between gap-2 sm:flex-row">
+                    <span>{{ pharmacy.name|default:"Pharmacy IMS" }} · Inventory &amp; Sales Management</span>
+                    <span>Secure session · {{ user.get_role_display }}</span>
+                </div>
+            </footer>
+        </div>
+    </div>
+    {% endwith %}
+    <script>
+        (function () {
+            var sidebar = document.getElementById('sidebar');
+            var overlay = document.getElementById('navOverlay');
+            function open() {
+                if (!sidebar || !overlay) return;
+                sidebar.classList.remove('-translate-x-full');
+                overlay.classList.remove('hidden');
+                document.body.classList.add('overflow-hidden');
+            }
+            function close() {
+                if (!sidebar || !overlay) return;
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.add('hidden');
+                document.body.classList.remove('overflow-hidden');
+            }
+            document.querySelectorAll('[data-nav-open]').forEach(function (el) { el.addEventListener('click', open); });
+            document.querySelectorAll('[data-nav-close]').forEach(function (el) { el.addEventListener('click', close); });
+            document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
+            window.addEventListener('resize', function () { if (window.innerWidth >= 1024) close(); });
+        })();
+    </script>
+    {% else %}
+    {% block auth_content %}{% endblock %}
+    {% endif %}
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block title %}Adjust stock - {{ batch.medicine.generic_name }}{% endblock %}
+{% block page_title %}Adjust stock{% endblock %}
+{% block page_subtitle %}{{ batch.medicine.generic_name }} · batch {{ batch.batch_no }}{% endblock %}
+{% block breadcrumbs %}
+<i class="bi bi-chevron-right text-[0.6rem]"></i>
+<a href="{% url 'inventory_list' %}" class="transition-colors hover:text-foreground">Inventory</a>
+<i class="bi bi-chevron-right text-[0.6rem]"></i>
+<span class="text-foreground">Adjust</span>
+{% endblock %}
+{% block content %}
+<div class="card max-w-xl">
+    <div class="card-header">
+        <h2 class="card-title">Adjust batch quantity</h2>
+        <p class="card-description">Use this for recounts, damage, or supplier corrections. Every change is written to the stock ledger.</p>
+    </div>
+    <form method="post">
+        {% csrf_token %}
+        <div class="card-content space-y-4">
+            <div class="rounded-lg border border-border bg-muted/40 p-4 text-sm">
+                <div class="flex justify-between"><span class="text-muted-foreground">Current quantity</span><span class="font-semibold">{{ batch.remaining_quantity }}</span></div>
+                <div class="mt-1 flex justify-between"><span class="text-muted-foreground">Expiry</span><span>{{ batch.expiry_date }}</span></div>
+                <div class="mt-1 flex justify-between"><span class="text-muted-foreground">Batch</span><span class="font-mono text-xs">{{ batch.batch_no }}</span></div>
+            </div>
+            {% include 'partials/form_fields.html' %}
+        </div>
+        <div class="card-footer flex items-center justify-end gap-2 border-t border-border">
+            <a href="{% url 'inventory_list' %}" class="btn btn-outline">Cancel</a>
+            <button class="btn btn-primary"><i class="bi bi-check2"></i> Save adjustment</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

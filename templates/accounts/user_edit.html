@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% block title %}Edit {{ edit_user.username }} - Pharmacy IMS{% endblock %}
+{% block page_title %}Edit User{% endblock %}
+{% block page_subtitle %}{{ edit_user.username }} · {{ edit_user.get_role_display }}{% endblock %}
+{% block breadcrumbs %}
+<i class="bi bi-chevron-right text-[0.6rem]"></i>
+<a href="{% url 'user_list' %}" class="transition-colors hover:text-foreground">Users</a>
+<i class="bi bi-chevron-right text-[0.6rem]"></i>
+<span class="text-foreground">{{ edit_user.username }}</span>
+{% endblock %}
+{% block page_actions %}
+<a href="{% url 'user_list' %}" class="btn btn-outline"><i class="bi bi-arrow-left"></i> Back</a>
+{% endblock %}
+{% block content %}
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+    <div class="card">
+        <form method="post">
+            {% csrf_token %}
+            <div class="card-content grid grid-cols-1 gap-4 sm:grid-cols-2">
+                {% include 'partials/form_fields.html' %}
+            </div>
+            <div class="card-footer flex items-center justify-end gap-2 border-t border-border">
+                <a href="{% url 'user_list' %}" class="btn btn-outline">Cancel</a>
+                <button class="btn btn-primary"><i class="bi bi-check2"></i> Save changes</button>
+            </div>
+        </form>
+    </div>
+    <aside class="card h-fit">
+        <div class="card-header"><h2 class="card-title">Account activity</h2></div>
+        <div class="card-content space-y-3 text-sm">
+            <div class="flex justify-between"><span class="text-muted-foreground">Username</span><span class="font-mono text-xs">@{{ edit_user.username }}</span></div>
+            <div class="flex justify-between"><span class="text-muted-foreground">Two-factor</span><span>{% if edit_user.otp_enabled %}<span class="badge badge-success">Enabled</span>{% else %}<span class="badge badge-muted">Disabled</span>{% endif %}</span></div>
+            <div class="flex justify-between"><span class="text-muted-foreground">Last login</span><span>{{ edit_user.last_login|date:"M d, Y H:i"|default:"Never" }}</span></div>
+            <div class="flex justify-between"><span class="text-muted-foreground">Joined</span><span>{{ edit_user.date_joined|date:"M d, Y" }}</span></div>
+            <p class="border-t border-border pt-3 text-xs text-muted-foreground">Passwords changed here must meet the configured password policy. Users can reset forgotten passwords from the sign-in page.</p>
+        </div>
+    </aside>
+</div>
+{% endblock %}

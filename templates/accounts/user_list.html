@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+{% block title %}Users - Pharmacy IMS{% endblock %}
+{% block page_title %}Users{% endblock %}
+{% block page_subtitle %}Staff accounts, roles, and access status{% endblock %}
+{% block breadcrumbs %}
+<i class="bi bi-chevron-right text-[0.6rem]"></i>
+<span class="text-foreground">Users</span>
+{% endblock %}
+{% block page_actions %}
+<a href="{% url 'user_add' %}" class="btn btn-primary"><i class="bi bi-person-plus"></i> Add User</a>
+{% endblock %}
+{% block content %}
+<section class="card">
+    <div class="card-header border-b border-border">
+        <div>
+            <h2 class="card-title">User Management</h2>
+            <p class="card-description">{{ page_obj.paginator.count }} account{{ page_obj.paginator.count|pluralize }}</p>
+        </div>
+        <form method="get" class="filter-bar sm:justify-end">
+            <div class="field min-w-[14rem] flex-1">
+                <label class="label" for="q">Search</label>
+                <div class="relative">
+                    <i class="bi bi-search pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground"></i>
+                    <input id="q" name="q" value="{{ query }}" class="input pl-9" placeholder="Name, username, or email">
+                </div>
+            </div>
+            <div class="field min-w-[11rem]">
+                <label class="label" for="role">Role</label>
+                <select id="role" name="role" class="select">
+                    <option value="">All roles</option>
+                    {% for value, label in roles %}<option value="{{ value }}" {% if selected_role == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="flex items-center gap-2 pb-0.5">
+                <button class="btn btn-outline"><i class="bi bi-funnel"></i> Filter</button>
+                {% if query or selected_role %}<a href="{% url 'user_list' %}" class="btn btn-ghost">Clear</a>{% endif %}
+            </div>
+        </form>
+    </div>
+    <div class="card-content flush">
+        <div class="table-wrap">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>User</th>
+                        <th>Role</th>
+                        <th>Email</th>
+                        <th>2FA</th>
+                        <th>Status</th>
+                        <th class="text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for account in users %}
+                    <tr>
+                        <td>
+                            <div class="flex items-center gap-3">
+                                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary/15 to-emerald-500/10 text-sm font-semibold text-primary">
+                                    {{ account.username|slice:":1"|upper }}
+                                </div>
+                                <div class="min-w-0">
+                                    <p class="font-medium">{{ account.get_full_name|default:account.username }}</p>
+                                    <p class="text-xs text-muted-foreground">@{{ account.username }}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td><span class="badge badge-secondary">{{ account.get_role_display }}</span></td>
+                        <td class="text-muted-foreground">{{ account.email|default:"—" }}</td>
+                        <td>{% if account.otp_enabled %}<span class="badge badge-success">Enabled</span>{% else %}<span class="badge badge-muted">Off</span>{% endif %}</td>
+                        <td>{% if account.status %}<span class="badge badge-success">Active</span>{% else %}<span class="badge badge-destructive">Inactive</span>{% endif %}</td>
+                        <td class="text-right">
+                            <a href="{% url 'user_edit' account.pk %}" class="btn btn-ghost btn-sm">Edit</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6">
+                            <div class="empty-state">
+                                <span class="empty-state-icon"><i class="bi bi-people"></i></span>
+                                <div class="empty-state-title">No users found</div>
+                                <div class="empty-state-description">Adjust the filters or create a new staff account.</div>
+                                <a href="{% url 'user_add' %}" class="btn btn-outline btn-sm mt-2"><i class="bi bi-person-plus"></i> Add user</a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% include 'partials/pagination.html' %}
+</section>
+{% endblock %}

@@ -1,0 +1,417 @@
+﻿{% extends 'base.html' %}
+{% block title %}POS - Pharmacy IMS{% endblock %}
+{% block page_title %}Point of Sale{% endblock %}
+{% block page_subtitle %}Scan, search, and complete a sale{% endblock %}
+{% block breadcrumbs %}
+<i class="bi bi-chevron-right text-[0.6rem]"></i>
+<span class="text-foreground">POS</span>
+{% endblock %}
+{% block content %}
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_380px] xl:grid-cols-[minmax(0,1fr)_420px]">
+    <div class="space-y-6">
+        <section class="card">
+            <div class="card-header row">
+                <div>
+                    <h2 class="card-title">Scan or search</h2>
+                    <p class="card-description">Press F2 to focus the scanner. Scan a barcode or type a name.</p>
+                </div>
+                <span class="badge badge-outline"><i class="bi bi-upc-scan"></i> Barcode ready</span>
+            </div>
+            <div class="card-content">
+                <div class="relative">
+                    <i class="bi bi-upc-scan absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground"></i>
+                    <input type="text" id="searchInput" class="input pl-9" placeholder="Scan barcode or search medicine..." autocomplete="off" autofocus>
+                </div>
+                <div id="searchResults" class="mt-3"></div>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="card-header row border-b border-border">
+                <div>
+                    <h2 class="card-title">Cart</h2>
+                    <p class="card-description">Items added for this transaction</p>
+                </div>
+                <span class="badge badge-secondary">Items: <span id="cartCount">0</span></span>
+            </div>
+            <div class="card-content flush">
+                <div class="table-wrap">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Item</th>
+                                <th class="text-right">Price</th>
+                                <th class="text-center">Qty</th>
+                                <th class="text-right">Subtotal</th>
+                                <th class="text-right">Remove</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cartBody"></tbody>
+                    </table>
+                </div>
+                <div id="cartEmpty" class="empty-state border-t border-border">
+                    <span class="empty-state-icon"><i class="bi bi-cart"></i></span>
+                    <div>
+                        <p class="text-sm font-medium">Cart is empty</p>
+                        <p class="mt-1 text-sm text-muted-foreground">Scan a barcode or search for a medicine to begin</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <div class="lg:sticky lg:top-[5.5rem] lg:self-start">
+        <section class="card">
+            <div class="card-header border-b border-border">
+                <h2 class="card-title">Checkout</h2>
+                <p class="card-description">Customer, discount, and payment</p>
+            </div>
+            <form method="post" action="{% url 'pos_checkout' %}" id="checkoutForm">
+                {% csrf_token %}
+                <input type="hidden" name="cart" id="cartData">
+                <input type="hidden" name="customer_id" id="customerId">
+                <div class="card-content space-y-4 pt-6">
+                    <div class="field relative">
+                        <label class="label" for="customerName">Customer</label>
+                        <input id="customerName" type="text" name="customer_name" class="input" placeholder="Walk-in (optional)" autocomplete="off">
+                        <div id="customerResults" class="absolute left-0 right-0 z-20 mt-1 hidden overflow-hidden rounded-lg border border-border bg-popover shadow-lg"></div>
+                        <p class="help-text">Search an existing customer or type a new name.</p>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="field">
+                            <label class="label" for="custType">Customer type</label>
+                            <select name="customer_type" id="custType" class="select">
+                                <option value="regular">Regular</option>
+                                <option value="senior_citizen">Senior Citizen (20%)</option>
+                                <option value="pwd">PWD (20%)</option>
+                            </select>
+                        </div>
+                        <div class="field hidden" id="idField">
+                            <label class="label" for="idNo">ID No.</label>
+                            <input id="idNo" type="text" name="id_no" class="input" placeholder="Senior/PWD ID">
+                        </div>
+                    </div>
+
+                    <div class="rounded-lg border border-border bg-muted/40 p-4">
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="text-muted-foreground">Subtotal</span>
+                            <span id="subtotal" class="font-medium">₱0.00</span>
+                        </div>
+                        <div class="mt-2 flex items-center justify-between text-sm">
+                            <span class="text-muted-foreground">VAT exempt</span>
+                            <span id="vatExempt" class="font-medium">₱0.00</span>
+                        </div>
+                        <div class="mt-2 flex items-center justify-between text-sm">
+                            <span class="text-muted-foreground">Discount</span>
+                            <span id="discount" class="font-medium text-emerald-700">₱0.00</span>
+                        </div>
+                        <div class="mt-3 flex items-center justify-between border-t border-border pt-3">
+                            <span class="text-base font-semibold">Total</span>
+                            <span id="total" class="text-xl font-semibold">₱0.00</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="field">
+                            <label class="label" for="paymentMethod">Payment</label>
+                            <select name="payment_method" id="paymentMethod" class="select">
+                                <option value="cash">Cash</option>
+                                <option value="gcash">GCash</option>
+                                <option value="card">Card</option>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label class="label" for="amountPaid">Amount paid</label>
+                            <input type="number" step="0.01" min="0" name="amount_paid" id="amountPaid" class="input" placeholder="0.00" required>
+                        </div>
+                    </div>
+                    <div class="field hidden" id="referenceField">
+                        <label class="label" for="paymentReference">Reference no.</label>
+                        <input id="paymentReference" type="text" name="payment_reference" class="input" placeholder="GCash / card reference">
+                    </div>
+
+                    <div class="flex items-center justify-between rounded-lg border border-border px-4 py-2.5">
+                        <span class="text-sm text-muted-foreground">Change</span>
+                        <span id="change" class="text-base font-semibold">₱0.00</span>
+                    </div>
+
+                    <button class="btn btn-primary w-full" id="checkoutBtn" disabled>
+                        <i class="bi bi-check-circle"></i> Complete transaction
+                    </button>
+                    <p id="payHint" class="text-center text-xs text-muted-foreground">Senior/PWD discount follows the VAT-exempt rule.</p>
+                </div>
+            </form>
+        </section>
+    </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+const VAT_RATE = {{ vat_rate }};
+const DISCOUNT_RATE = {{ discount_rate }};
+const searchInput = document.getElementById('searchInput');
+const searchResults = document.getElementById('searchResults');
+const cartBody = document.getElementById('cartBody');
+const cartEmpty = document.getElementById('cartEmpty');
+const cartCount = document.getElementById('cartCount');
+const cartData = document.getElementById('cartData');
+const custType = document.getElementById('custType');
+const idField = document.getElementById('idField');
+const idNo = document.getElementById('idNo');
+const customerName = document.getElementById('customerName');
+const customerId = document.getElementById('customerId');
+const customerResults = document.getElementById('customerResults');
+const subtotalEl = document.getElementById('subtotal');
+const vatExemptEl = document.getElementById('vatExempt');
+const discountEl = document.getElementById('discount');
+const totalEl = document.getElementById('total');
+const amountPaid = document.getElementById('amountPaid');
+const changeEl = document.getElementById('change');
+const checkoutBtn = document.getElementById('checkoutBtn');
+const paymentMethod = document.getElementById('paymentMethod');
+const referenceField = document.getElementById('referenceField');
+const payHint = document.getElementById('payHint');
+let cart = [];
+let currentResults = [];
+let currentTotal = 0;
+let customerTimer = null;
+
+function esc(value) {
+    return String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function money(value) { return '₱' + Number(value).toFixed(2); }
+
+async function searchMedicines(query) {
+    if (query.length < 1) { searchResults.innerHTML = ''; currentResults = []; return; }
+    try {
+        const response = await fetch('{% url "pos_search" %}?q=' + encodeURIComponent(query));
+        currentResults = await response.json();
+    } catch (error) {
+        searchResults.innerHTML = '<div class="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">Unable to search right now.</div>';
+        return;
+    }
+    if (!currentResults.length) {
+        searchResults.innerHTML = '<div class="rounded-lg border border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">No medicines found.</div>';
+        return;
+    }
+    searchResults.innerHTML = '<div class="overflow-hidden rounded-lg border border-border bg-popover shadow-md">' + currentResults.map((m, idx) => `
+        <button type="button" data-add="${m.id}" class="flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm transition hover:bg-accent ${idx > 0 ? 'border-t border-border' : ''}">
+            <div>
+                <p class="font-medium">${esc(m.name)}</p>
+                <p class="text-xs text-muted-foreground">${esc(m.code)} · Stock: ${m.stock}</p>
+            </div>
+            <span class="font-medium">${money(m.price)}</span>
+        </button>`).join('') + '</div>';
+    searchResults.querySelectorAll('[data-add]').forEach(button => {
+        button.addEventListener('click', () => addToCart(Number(button.dataset.add)));
+    });
+}
+
+searchInput.addEventListener('input', function () { searchMedicines(this.value.trim()); });
+searchInput.addEventListener('keydown', async function (event) {
+    if (event.key !== 'Enter') return;
+    event.preventDefault();
+    const query = this.value.trim();
+    if (!query) return;
+    await searchMedicines(query);
+    const exact = currentResults.find(m => m.barcode === query || (m.code || '').toLowerCase() === query.toLowerCase());
+    if (exact) addToCart(exact.id);
+});
+document.addEventListener('keydown', function (event) {
+    if (event.key === 'F2') { event.preventDefault(); searchInput.focus(); searchInput.select(); }
+});
+document.addEventListener('click', function (event) {
+    if (!searchResults.contains(event.target) && event.target !== searchInput) searchResults.innerHTML = '';
+});
+
+function addToCart(id) {
+    const medicine = currentResults.find(m => m.id === id);
+    if (!medicine) return;
+    if (medicine.stock <= 0) {
+        payHint.textContent = `No sellable stock for ${medicine.name}.`;
+        return;
+    }
+    const existing = cart.find(item => item.id === id);
+    if (existing) {
+        if (existing.quantity + 1 > medicine.stock) {
+            payHint.textContent = `Only ${medicine.stock} units of ${medicine.name} are available.`;
+            return;
+        }
+        existing.quantity += 1;
+    } else {
+        cart.push({ id, name: medicine.name, price: Number(medicine.price), stock: medicine.stock, quantity: 1 });
+    }
+    searchResults.innerHTML = '';
+    searchInput.value = '';
+    searchInput.focus();
+    renderCart();
+}
+
+function renderCart() {
+    let subtotal = 0;
+    if (cart.length === 0) {
+        cartBody.innerHTML = '';
+        cartEmpty.classList.remove('hidden');
+        cartCount.textContent = '0';
+    } else {
+        cartEmpty.classList.add('hidden');
+        let html = '';
+        cart.forEach((item, index) => {
+            const line = item.price * item.quantity;
+            subtotal += line;
+            html += `<tr>
+                <td class="font-medium">${esc(item.name)}</td>
+                <td class="text-right text-sm text-muted-foreground">${money(item.price)}</td>
+                <td>
+                    <div class="flex items-center justify-center gap-1.5">
+                        <button type="button" class="btn btn-outline btn-icon btn-sm" data-qty="${index}" data-delta="-1" aria-label="Decrease quantity"><i class="bi bi-dash"></i></button>
+                        <input type="number" value="${item.quantity}" min="1" max="${item.stock}" class="input input-sm w-14 text-center" data-qty-input="${index}">
+                        <button type="button" class="btn btn-outline btn-icon btn-sm" data-qty="${index}" data-delta="1" aria-label="Increase quantity"><i class="bi bi-plus"></i></button>
+                    </div>
+                </td>
+                <td class="text-right font-medium">${money(line)}</td>
+                <td class="text-right"><button type="button" class="btn btn-ghost btn-icon btn-sm text-muted-foreground hover:text-destructive" data-remove="${index}" aria-label="Remove item"><i class="bi bi-trash"></i></button></td>
+            </tr>`;
+        });
+        cartBody.innerHTML = html;
+        cartCount.textContent = cart.length;
+    }
+
+    let vatExempt = 0, discount = 0, total = subtotal;
+    if (custType.value !== 'regular') {
+        vatExempt = subtotal - (subtotal / (1 + VAT_RATE));
+        discount = (subtotal - vatExempt) * DISCOUNT_RATE;
+        total = subtotal - vatExempt - discount;
+    }
+    currentTotal = Math.max(0, total);
+    subtotalEl.textContent = money(subtotal);
+    vatExemptEl.textContent = money(vatExempt);
+    discountEl.textContent = '−' + money(discount);
+    totalEl.textContent = money(currentTotal);
+    cartData.value = JSON.stringify(cart.map(item => ({ id: item.id, quantity: item.quantity })));
+    updateChange();
+}
+
+cartBody.addEventListener('click', function (event) {
+    const qtyButton = event.target.closest('[data-qty]');
+    if (qtyButton) {
+        const index = Number(qtyButton.dataset.qty);
+        const delta = Number(qtyButton.dataset.delta);
+        const item = cart[index];
+        if (!item) return;
+        const next = item.quantity + delta;
+        if (next < 1) return;
+        if (next > item.stock) {
+            payHint.textContent = `Only ${item.stock} units of ${item.name} are available.`;
+            return;
+        }
+        item.quantity = next;
+        renderCart();
+        return;
+    }
+    const removeButton = event.target.closest('[data-remove]');
+    if (removeButton) {
+        cart.splice(Number(removeButton.dataset.remove), 1);
+        renderCart();
+    }
+});
+
+cartBody.addEventListener('change', function (event) {
+    const input = event.target.closest('[data-qty-input]');
+    if (!input) return;
+    const index = Number(input.dataset.qtyInput);
+    const item = cart[index];
+    if (!item) return;
+    let value = Number(input.value);
+    if (!Number.isFinite(value) || value < 1) value = 1;
+    if (value > item.stock) {
+        value = item.stock;
+        payHint.textContent = `Only ${item.stock} units of ${item.name} are available.`;
+    }
+    item.quantity = Math.floor(value);
+    renderCart();
+});
+
+custType.addEventListener('change', function () {
+    idField.classList.toggle('hidden', this.value === 'regular');
+    idNo.required = this.value !== 'regular';
+    renderCart();
+});
+
+paymentMethod.addEventListener('change', function () {
+    referenceField.classList.toggle('hidden', this.value === 'cash');
+    updateChange();
+});
+
+amountPaid.addEventListener('input', updateChange);
+
+function updateChange() {
+    const paid = parseFloat(amountPaid.value) || 0;
+    const change = paid - currentTotal;
+    changeEl.textContent = money(Math.max(0, change));
+    const enough = paid >= currentTotal && cart.length > 0 && currentTotal > 0;
+    checkoutBtn.disabled = !enough;
+    if (!enough && cart.length && paid > 0 && paid < currentTotal) {
+        payHint.textContent = 'Amount paid is below the total.';
+    } else {
+        payHint.textContent = 'Senior/PWD discount follows the VAT-exempt rule.';
+    }
+}
+
+customerName.addEventListener('input', function () {
+    customerId.value = '';
+    clearTimeout(customerTimer);
+    const query = this.value.trim();
+    if (query.length < 2) { customerResults.classList.add('hidden'); return; }
+    customerTimer = setTimeout(async () => {
+        try {
+            const response = await fetch('{% url "customer_search" %}?q=' + encodeURIComponent(query));
+            const customers = await response.json();
+            if (!customers.length) { customerResults.classList.add('hidden'); return; }
+            customerResults.innerHTML = customers.map(c => `
+                <button type="button" class="block w-full border-b border-border px-4 py-2 text-left text-sm last:border-0 hover:bg-accent" data-customer="${c.id}">
+                    <span class="font-medium">${esc(c.name)}</span>
+                    <span class="ml-2 text-xs text-muted-foreground">${esc(c.phone || '')} ${esc(c.type_label)}</span>
+                </button>`).join('');
+            customerResults.classList.remove('hidden');
+            customerResults.querySelectorAll('[data-customer]').forEach(button => {
+                button.addEventListener('click', () => {
+                    const customer = customers.find(c => c.id === Number(button.dataset.customer));
+                    customerName.value = customer.name;
+                    customerId.value = customer.id;
+                    custType.value = customer.type;
+                    if (customer.id_no) idNo.value = customer.id_no;
+                    idField.classList.toggle('hidden', customer.type === 'regular');
+                    idNo.required = customer.type !== 'regular';
+                    customerResults.classList.add('hidden');
+                    renderCart();
+                });
+            });
+        } catch (error) { customerResults.classList.add('hidden'); }
+    }, 250);
+});
+
+document.addEventListener('click', function (event) {
+    if (!customerResults.contains(event.target) && event.target !== customerName) customerResults.classList.add('hidden');
+});
+
+document.getElementById('checkoutForm').addEventListener('submit', function (event) {
+    if (cart.length === 0) { event.preventDefault(); return; }
+    if (custType.value !== 'regular' && !idNo.value.trim()) {
+        event.preventDefault();
+        payHint.textContent = 'Enter the senior citizen/PWD ID number to apply the discount.';
+        idNo.focus();
+        return;
+    }
+    if ((parseFloat(amountPaid.value) || 0) < currentTotal) {
+        event.preventDefault();
+        payHint.textContent = 'Amount paid is below the total.';
+        amountPaid.focus();
+    }
+});
+
+renderCart();
+searchInput.focus();
+</script>
+{% endblock %}

@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% block title %}Audit Log - Pharmacy IMS{% endblock %}
+{% block page_title %}Audit Log{% endblock %}
+{% block page_subtitle %}Security and business events, newest first{% endblock %}
+{% block breadcrumbs %}
+<i class="bi bi-chevron-right text-[0.6rem]"></i>
+<span class="text-foreground">Audit log</span>
+{% endblock %}
+{% block content %}
+<section class="card">
+    <div class="card-header border-b border-border">
+        <form method="get" class="filter-bar">
+            <div class="field min-w-60 flex-1">
+                <label class="label" for="q">Search</label>
+                <input id="q" name="q" value="{{ query }}" class="input" placeholder="User, model, or description">
+            </div>
+            <div class="field min-w-48">
+                <label class="label" for="action">Action</label>
+                <select id="action" name="action" class="select">
+                    <option value="">All actions</option>
+                    {% for value, label in actions %}<option value="{{ value }}" {% if selected_action == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+                </select>
+            </div>
+            <button class="btn btn-outline"><i class="bi bi-search"></i> Filter</button>
+            {% if query or selected_action %}<a href="{% url 'audit_log' %}" class="btn btn-ghost">Clear</a>{% endif %}
+        </form>
+    </div>
+    <div class="card-content flush">
+        <div class="table-wrap">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>When</th>
+                        <th>User</th>
+                        <th>Action</th>
+                        <th>Record</th>
+                        <th>Description</th>
+                        <th>IP</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for entry in logs %}
+                    <tr>
+                        <td class="whitespace-nowrap text-xs text-muted-foreground">{{ entry.created_at|date:"M d, Y H:i:s" }}</td>
+                        <td class="font-medium">{{ entry.user.username|default:"system" }}</td>
+                        <td>
+                            {% if entry.action == 'login' or entry.action == 'logout' %}<span class="badge badge-outline">{{ entry.get_action_display }}</span>
+                            {% elif entry.action == 'login_failed' or entry.action == 'delete' or entry.action == 'void' %}<span class="badge badge-destructive">{{ entry.get_action_display }}</span>
+                            {% elif entry.action == 'sale' or entry.action == 'create' %}<span class="badge badge-success">{{ entry.get_action_display }}</span>
+                            {% elif entry.action == 'update' or entry.action == 'stock' %}<span class="badge badge-warning">{{ entry.get_action_display }}</span>
+                            {% else %}<span class="badge badge-secondary">{{ entry.get_action_display }}</span>{% endif %}
+                        </td>
+                        <td class="text-muted-foreground">
+                            {% if entry.model_name %}{{ entry.model_name }}{% if entry.object_id %} #{{ entry.object_id }}{% endif %}{% else %}—{% endif %}
+                        </td>
+                        <td class="max-w-md">{{ entry.description|default:"—" }}</td>
+                        <td class="font-mono text-xs text-muted-foreground">{{ entry.ip_address|default:"—" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="6" class="p-0">
+                            <div class="empty-state">
+                                <span class="empty-state-icon"><i class="bi bi-clock-history"></i></span>
+                                <div class="empty-state-title">No audit events</div>
+                                <div class="empty-state-description">Activity matching these filters will appear here.</div>
+                            </div>
+                        </td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% include 'partials/pagination.html' %}
+</section>
+{% endblock %}

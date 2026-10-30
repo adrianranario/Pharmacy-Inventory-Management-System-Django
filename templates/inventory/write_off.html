@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block title %}Write off stock - {{ batch.medicine.generic_name }}{% endblock %}
+{% block page_title %}Write off stock{% endblock %}
+{% block page_subtitle %}{{ batch.medicine.generic_name }} · batch {{ batch.batch_no }}{% endblock %}
+{% block breadcrumbs %}
+<i class="bi bi-chevron-right text-[0.6rem]"></i>
+<a href="{% url 'inventory_list' %}" class="transition-colors hover:text-foreground">Inventory</a>
+<i class="bi bi-chevron-right text-[0.6rem]"></i>
+<span class="text-foreground">Write off</span>
+{% endblock %}
+{% block content %}
+<div class="card max-w-xl">
+    <div class="card-header">
+        <h2 class="card-title">Write off units</h2>
+        <p class="card-description">Use for damaged, recalled, or unusable stock. The batch balance and ledger update immediately.</p>
+    </div>
+    <form method="post">
+        {% csrf_token %}
+        <div class="card-content space-y-4">
+            <div class="rounded-lg border border-border bg-muted/40 p-4 text-sm">
+                <div class="flex justify-between"><span class="text-muted-foreground">Remaining quantity</span><span class="font-semibold">{{ batch.remaining_quantity }} {{ batch.medicine.unit }}</span></div>
+                <div class="mt-1 flex justify-between"><span class="text-muted-foreground">Expiry</span><span>{{ batch.expiry_date }}</span></div>
+            </div>
+            {% include 'partials/form_fields.html' %}
+        </div>
+        <div class="card-footer flex items-center justify-end gap-2 border-t border-border">
+            <a href="{% url 'inventory_list' %}" class="btn btn-outline">Cancel</a>
+            <button class="btn btn-destructive"><i class="bi bi-slash-circle"></i> Write off</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

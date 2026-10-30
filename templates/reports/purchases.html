@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+{% block title %}Purchases Report - Pharmacy IMS{% endblock %}
+{% block page_title %}Purchases Report{% endblock %}
+{% block page_subtitle %}Purchase orders and supplier spend{% endblock %}
+{% block breadcrumbs %}
+<i class="bi bi-chevron-right text-[0.6rem]"></i>
+<a href="{% url 'reports_index' %}" class="transition-colors hover:text-foreground">Reports</a>
+<i class="bi bi-chevron-right text-[0.6rem]"></i>
+<span class="text-foreground">Purchases</span>
+{% endblock %}
+{% block page_actions %}
+<a href="{% url 'reports_index' %}" class="btn btn-outline"><i class="bi bi-arrow-left"></i> Back</a>
+{% if nav_perms.export_reports %}
+<a href="{% url 'export_purchases' %}?{{ request.GET.urlencode }}" class="btn btn-primary"><i class="bi bi-file-earmark-excel"></i> Export Excel</a>
+{% endif %}
+{% endblock %}
+{% block content %}
+<div class="space-y-6">
+    <div class="card">
+        <div class="card-content flex flex-wrap items-center justify-between gap-3 pt-6">
+            <div>
+                <p class="text-sm font-medium text-muted-foreground">Total purchase value</p>
+                <p class="mt-1 text-2xl font-semibold tracking-tight">₱{{ summary.total|default:0|floatformat:2 }}</p>
+            </div>
+            <span class="badge badge-secondary">{{ page_obj.paginator.count }} order{{ page_obj.paginator.count|pluralize }}</span>
+        </div>
+    </div>
+
+    <section class="card">
+        <div class="card-header border-b border-border">
+            <form method="get" class="filter-bar">
+                <div class="field min-w-40">
+                    <label class="label" for="status">Status</label>
+                    <select id="status" name="status" class="select">
+                        <option value="">All statuses</option>
+                        {% for value, label in statuses %}<option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div class="field">
+                    <label class="label" for="from">From</label>
+                    <input id="from" type="date" name="from" value="{{ date_from }}" class="input">
+                </div>
+                <div class="field">
+                    <label class="label" for="to">To</label>
+                    <input id="to" type="date" name="to" value="{{ date_to }}" class="input">
+                </div>
+                <button class="btn btn-outline"><i class="bi bi-funnel"></i> Filter</button>
+                {% if selected_status or date_from or date_to %}<a href="{% url 'report_purchases' %}" class="btn btn-ghost">Clear</a>{% endif %}
+            </form>
+        </div>
+        <div class="card-content flush">
+            <div class="table-wrap">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>PO No.</th>
+                            <th>Supplier</th>
+                            <th>Purchase date</th>
+                            <th>Invoice</th>
+                            <th>Status</th>
+                            <th>Received by</th>
+                            <th class="text-right">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for purchase in purchases %}
+                        <tr>
+                            <td><a href="{% url 'purchase_view' purchase.pk %}" class="font-mono text-xs font-medium hover:underline">{{ purchase.purchase_no }}</a></td>
+                            <td class="font-medium">{{ purchase.supplier.name }}</td>
+                            <td class="text-muted-foreground">{{ purchase.purchase_date }}</td>
+                            <td class="text-muted-foreground">{{ purchase.invoice_no|default:"—" }}</td>
+                            <td>
+                                {% if purchase.status == 'received' %}<span class="badge badge-success">Received</span>
+                                {% elif purchase.status == 'draft' %}<span class="badge badge-outline">Draft</span>
+                                {% elif purchase.status == 'ordered' %}<span class="badge badge-warning">Ordered</span>
+                                {% else %}<span class="badge badge-muted">Cancelled</span>{% endif %}
+                            </td>
+                            <td class="text-muted-foreground">{{ purchase.received_by.username|default:"—" }}</td>
+                            <td class="text-right font-medium">₱{{ purchase.total_amount|floatformat:2 }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="7" class="p-0">
+                            <div class="empty-state">
+                                <span class="empty-state-icon"><i class="bi bi-truck"></i></span>
+                                <div class="empty-state-title">No purchases found</div>
+                                <div class="empty-state-description">No purchase orders match the selected filters.</div>
+                            </div>
+                        </td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% include 'partials/pagination.html' %}
+    </section>
+</div>
+{% endblock %}

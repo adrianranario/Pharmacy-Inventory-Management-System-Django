@@ -1,0 +1,205 @@
+{% extends 'base.html' %}
+{% block title %}AI Assistant - Pharmacy IMS{% endblock %}
+{% block page_title %}AI Assistant{% endblock %}
+{% block page_subtitle %}Ask about inventory, stock levels, expiry, and sales{% endblock %}
+{% block breadcrumbs %}
+<i class="bi bi-chevron-right text-[0.6rem]"></i>
+<span class="text-foreground">AI Assistant</span>
+{% endblock %}
+{% block content %}
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-[260px_minmax(0,1fr)]">
+    <aside class="card h-fit lg:sticky lg:top-[5.5rem]">
+        <div class="card-header space-y-2 border-b border-border">
+            <form method="post" action="{% url 'assistant_new_thread' %}">
+                {% csrf_token %}
+                <button class="btn btn-primary w-full"><i class="bi bi-plus-lg"></i> New chat</button>
+            </form>
+            <p class="card-description">Your recent conversations</p>
+        </div>
+        <div class="max-h-[28rem] overflow-y-auto p-2">
+            {% for thread in threads %}
+            <a href="{% url 'assistant_index' %}?thread={{ thread.pk }}" class="nav-link {% if selected_thread and selected_thread.pk == thread.pk %}active{% endif %}">
+                <i class="bi bi-chat-square-text"></i>
+                <span class="truncate">{{ thread.display_title }}</span>
+            </a>
+            {% empty %}
+            <p class="px-3 py-6 text-center text-xs text-muted-foreground">No conversations yet. Ask a question to start one.</p>
+            {% endfor %}
+        </div>
+    </aside>
+
+    <section class="card">
+        <div class="card-header row border-b border-border">
+            <div class="flex items-center gap-3">
+                <span class="page-icon"><i class="bi bi-robot"></i></span>
+                <div>
+                    <h2 class="card-title">{% if selected_thread %}{{ selected_thread.display_title }}{% else %}New conversation{% endif %}</h2>
+                    <p class="card-description">Inventory-aware assistant · answers are based on your role's data access</p>
+                </div>
+            </div>
+            <span class="badge badge-outline">AI</span>
+        </div>
+
+        <div id="chatBox" class="chat-scroll" data-thread-id="{% if selected_thread %}{{ selected_thread.pk }}{% endif %}">
+            <div class="chat-row">
+                <div class="chat-bubble">
+                    <strong>Hi!</strong> I can help with stock levels, low stock, expiring medicines, purchasing, and sales. Ask me to "generate a low stock report" or "create a PDF inventory report" and I'll add download buttons. I cannot give medical diagnosis or treatment advice.
+                </div>
+            </div>
+            {% for message in chat_messages %}
+            <div class="chat-row chat-row-user">
+                <div class="chat-bubble chat-bubble-user">{{ message.question|linebreaksbr }}</div>
+            </div>
+            <div class="chat-row">
+                <div class="chat-bubble">
+                    {{ message.answer|linebreaksbr }}
+                    <p class="mt-2 text-[0.65rem] text-muted-foreground">{{ message.created_at|date:"M d, H:i" }}</p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div id="suggestions" class="flex flex-wrap gap-2 border-t border-border px-4 pt-4">
+            <button type="button" class="btn btn-outline btn-sm" data-suggestion="Which medicines are low on stock?">Low stock</button>
+            <button type="button" class="btn btn-outline btn-sm" data-suggestion="What expires in the next 30 days?">Expiring soon</button>
+            {% if nav_perms.view_sales %}
+            <button type="button" class="btn btn-outline btn-sm" data-suggestion="How were sales this week?">This week's sales</button>
+            {% endif %}
+            {% if nav_perms.export_reports %}
+            <button type="button" class="btn btn-outline btn-sm" data-suggestion="Generate an inventory report">Inventory report</button>
+            {% endif %}
+        </div>
+
+        <div class="card-footer border-t border-border pt-4">
+            <form id="askForm" class="flex w-full items-center gap-2">
+                {% csrf_token %}
+                <input type="text" id="question" class="input" placeholder="Ask about stock, expiry, sales..." autocomplete="off" maxlength="1000">
+                <button type="submit" class="btn btn-primary" id="sendBtn">
+                    <i class="bi bi-send"></i>
+                    Send
+                </button>
+            </form>
+            <p class="mt-2 text-xs text-muted-foreground">Press Enter to send. Inventory facts are read directly from the current database. Verify critical stock, expiry, and sales records before making decisions.</p>
+        </div>
+    </section>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+(function () {
+    const chatBox = document.getElementById('chatBox');
+    const form = document.getElementById('askForm');
+    const input = document.getElementById('question');
+    const sendBtn = document.getElementById('sendBtn');
+    const csrfToken = form.querySelector('[name=csrfmiddlewaretoken]').value;
+    let busy = false;
+
+    function scrollToBottom() {
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function addUserMessage(text) {
+        const row = document.createElement('div');
+        row.className = 'chat-row chat-row-user';
+        const bubble = document.createElement('div');
+        bubble.className = 'chat-bubble chat-bubble-user';
+        bubble.textContent = text;
+        row.appendChild(bubble);
+        chatBox.appendChild(row);
+    }
+
+    function addAssistantMessage(text, data) {
+        const row = document.createElement('div');
+        row.className = 'chat-row';
+        const bubble = document.createElement('div');
+        bubble.className = 'chat-bubble';
+        const body = document.createElement('div');
+        body.className = 'whitespace-pre-wrap';
+        body.textContent = text;
+        bubble.appendChild(body);
+        if (data && data.download_pdf) {
+            const actions = document.createElement('div');
+            actions.className = 'mt-3 flex flex-wrap gap-2';
+            const pdf = document.createElement('a');
+            pdf.href = data.download_pdf;
+            pdf.className = 'btn btn-sm btn-outline';
+            pdf.innerHTML = '<i class="bi bi-file-earmark-pdf"></i> Download PDF';
+            actions.appendChild(pdf);
+            if (data.download_docx) {
+                const docx = document.createElement('a');
+                docx.href = data.download_docx;
+                docx.className = 'btn btn-sm btn-outline';
+                docx.innerHTML = '<i class="bi bi-file-earmark-word"></i> Download Word';
+                actions.appendChild(docx);
+            }
+            bubble.appendChild(actions);
+        }
+        row.appendChild(bubble);
+        chatBox.appendChild(row);
+    }
+
+    function addError(text) {
+        const alert = document.createElement('div');
+        alert.className = 'alert alert-destructive m-4';
+        alert.innerHTML = '<i class="bi bi-exclamation-octagon"></i><span class="flex-1"></span>';
+        alert.querySelector('span').textContent = text;
+        chatBox.appendChild(alert);
+    }
+
+    async function ask(text) {
+        const question = (text || input.value).trim();
+        if (!question || busy) return;
+        busy = true;
+        sendBtn.disabled = true;
+        sendBtn.innerHTML = '<span class="spinner"></span> Thinking';
+        input.value = '';
+        addUserMessage(question);
+        scrollToBottom();
+
+        const body = new URLSearchParams();
+        body.append('question', question);
+        const threadId = chatBox.dataset.threadId;
+        if (threadId) body.append('thread_id', threadId);
+
+        try {
+            const response = await fetch('{% url "ask_assistant" %}', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrfToken, 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: body.toString(),
+            });
+            if (!response.ok) throw new Error('The assistant is unavailable right now.');
+            const data = await response.json();
+            addAssistantMessage(data.answer || 'No answer was returned.', data);
+            if (data.thread_id && !chatBox.dataset.threadId) {
+                chatBox.dataset.threadId = data.thread_id;
+                const url = new URL(window.location.href);
+                url.searchParams.set('thread', data.thread_id);
+                window.history.replaceState({}, '', url);
+            }
+        } catch (error) {
+            addError(error.message || 'Something went wrong. Please try again.');
+        } finally {
+            busy = false;
+            sendBtn.disabled = false;
+            sendBtn.innerHTML = '<i class="bi bi-send"></i> Send';
+            scrollToBottom();
+            input.focus();
+        }
+    }
+
+    form.addEventListener('submit', function (event) {
+        event.preventDefault();
+        ask();
+    });
+
+    document.getElementById('suggestions').addEventListener('click', function (event) {
+        const button = event.target.closest('[data-suggestion]');
+        if (!button) return;
+        ask(button.dataset.suggestion);
+    });
+
+    scrollToBottom();
+    input.focus();
+})();
+</script>
+{% endblock %}

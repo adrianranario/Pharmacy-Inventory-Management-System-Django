@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+{% block title %}Sales - Pharmacy IMS{% endblock %}
+{% block page_title %}Sales History{% endblock %}
+{% block page_subtitle %}Completed transactions, returns, and voids{% endblock %}
+{% block breadcrumbs %}
+<i class="bi bi-chevron-right text-[0.6rem]"></i>
+<span class="text-foreground">Sales</span>
+{% endblock %}
+{% block page_actions %}
+{% if nav_perms.sell %}
+<a href="{% url 'pos_index' %}" class="btn btn-primary"><i class="bi bi-cart-plus"></i> New Sale</a>
+{% endif %}
+{% endblock %}
+{% block content %}
+<section class="card">
+    <div class="card-header border-b border-border">
+        <div>
+            <h2 class="card-title">Sales History</h2>
+            <p class="card-description">{{ page_obj.paginator.count }} transaction{{ page_obj.paginator.count|pluralize }} recorded</p>
+        </div>
+        <form method="get" class="filter-bar sm:justify-end">
+            <div class="field min-w-[14rem] flex-1">
+                <label class="label" for="q">Search</label>
+                <div class="relative">
+                    <i class="bi bi-search pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground"></i>
+                    <input id="q" name="q" value="{{ query }}" class="input pl-9" placeholder="Invoice, OR, or customer">
+                </div>
+            </div>
+            <div class="field min-w-[9.5rem]">
+                <label class="label" for="status">Status</label>
+                <select id="status" name="status" class="select">
+                    <option value="">All statuses</option>
+                    {% for value, label in statuses %}<option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="field min-w-[9.5rem]">
+                <label class="label" for="payment">Payment</label>
+                <select id="payment" name="payment" class="select">
+                    <option value="">All methods</option>
+                    {% for value, label in payments %}<option value="{{ value }}" {% if selected_payment == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="field">
+                <label class="label" for="from">From</label>
+                <input id="from" type="date" name="from" value="{{ date_from }}" class="input">
+            </div>
+            <div class="field">
+                <label class="label" for="to">To</label>
+                <input id="to" type="date" name="to" value="{{ date_to }}" class="input">
+            </div>
+            <div class="flex items-center gap-2 pb-0.5">
+                <button class="btn btn-outline"><i class="bi bi-funnel"></i> Filter</button>
+                {% if query or selected_status or selected_payment or date_from or date_to %}<a href="{% url 'sales_list' %}" class="btn btn-ghost">Clear</a>{% endif %}
+            </div>
+        </form>
+    </div>
+    <div class="card-content flush">
+        <div class="table-wrap">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Invoice</th>
+                        <th>Customer</th>
+                        <th>Cashier</th>
+                        <th>Date</th>
+                        <th>Status</th>
+                        <th class="text-right">Total</th>
+                        <th class="text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for sale in sales %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'sale_view' sale.pk %}" class="font-mono text-xs font-medium text-primary hover:underline">{{ sale.invoice_no }}</a>
+                            {% if sale.or_number %}<p class="mt-0.5 text-[0.65rem] text-muted-foreground">OR {{ sale.or_number }}</p>{% endif %}
+                        </td>
+                        <td class="font-medium">{{ sale.customer_name|default:"Walk-in" }}</td>
+                        <td class="text-muted-foreground">{{ sale.sold_by.get_full_name|default:sale.sold_by.username }}</td>
+                        <td class="whitespace-nowrap text-muted-foreground">{{ sale.created_at|date:"M d, Y h:i A" }}</td>
+                        <td>
+                            {% if sale.status == 'completed' %}<span class="badge badge-success">Completed</span>
+                            {% elif sale.status == 'partially_returned' %}<span class="badge badge-warning">Partial return</span>
+                            {% elif sale.status == 'returned' %}<span class="badge badge-muted">Returned</span>
+                            {% else %}<span class="badge badge-destructive">Voided</span>{% endif %}
+                        </td>
+                        <td class="text-right font-medium tabular-nums">₱{{ sale.total_amount|floatformat:2 }}</td>
+                        <td class="text-right">
+                            <div class="inline-flex items-center gap-1">
+                                <a href="{% url 'sale_view' sale.pk %}" class="btn btn-ghost btn-sm">View</a>
+                                <a href="{% url 'pos_receipt' sale.pk %}" target="_blank" class="btn btn-ghost btn-sm btn-icon" title="Receipt" aria-label="Open receipt"><i class="bi bi-printer"></i></a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7">
+                            <div class="empty-state">
+                                <span class="empty-state-icon"><i class="bi bi-receipt"></i></span>
+                                <div class="empty-state-title">No sales found</div>
+                                <div class="empty-state-description">Try adjusting the filters, or start a new sale at the point of sale.</div>
+                                {% if nav_perms.sell %}<a href="{% url 'pos_index' %}" class="btn btn-outline btn-sm mt-2"><i class="bi bi-cart-plus"></i> New sale</a>{% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% include 'partials/pagination.html' %}
+</section>
+{% endblock %}

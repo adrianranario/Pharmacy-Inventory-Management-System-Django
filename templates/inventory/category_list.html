@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+{% block title %}Category List - Pharmacy IMS{% endblock %}
+{% block page_title %}Categories{% endblock %}
+{% block page_subtitle %}Group medicines for reporting and stock analysis{% endblock %}
+{% block breadcrumbs %}
+<i class="bi bi-chevron-right text-[0.6rem]"></i>
+<a href="{% url 'medicine_list' %}" class="transition-colors hover:text-foreground">Medicines</a>
+<i class="bi bi-chevron-right text-[0.6rem]"></i>
+<span class="text-foreground">Categories</span>
+{% endblock %}
+{% block page_actions %}
+{% if nav_perms.manage_inventory %}<a href="{% url 'category_add' %}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Add Category</a>{% endif %}
+{% endblock %}
+{% block content %}
+<section class="card">
+    <div class="card-header border-b border-border">
+        <div>
+            <h2 class="card-title">Medicine Categories</h2>
+            <p class="card-description">{{ categories|length }} categor{{ categories|length|pluralize:"y,ies" }}</p>
+        </div>
+    </div>
+    <div class="card-content flush">
+        <div class="table-wrap">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Description</th>
+                        <th class="text-right">Medicines</th>
+                        <th class="text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for category in categories %}
+                    <tr>
+                        <td class="font-medium">{{ category.name }}</td>
+                        <td class="text-muted-foreground">{{ category.description|default:"—" }}</td>
+                        <td class="text-right tabular-nums">{{ category.medicines.count }}</td>
+                        <td class="text-right">
+                            {% if nav_perms.manage_inventory %}<a href="{% url 'category_edit' category.pk %}" class="btn btn-ghost btn-sm btn-icon" title="Edit category" aria-label="Edit {{ category.name }}"><i class="bi bi-pencil"></i></a>{% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4">
+                            <div class="empty-state">
+                                <span class="empty-state-icon"><i class="bi bi-tags"></i></span>
+                                <div class="empty-state-title">No categories</div>
+                                <div class="empty-state-description">Add categories to classify your medicines and improve reporting.</div>
+                                {% if nav_perms.manage_inventory %}<a href="{% url 'category_add' %}" class="btn btn-outline btn-sm mt-2"><i class="bi bi-plus-lg"></i> Add category</a>{% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% block title %}Delete User - Pharmacy IMS{% endblock %}
+{% block page_title %}Delete User{% endblock %}
+{% block page_subtitle %}This action cannot be undone{% endblock %}
+{% block breadcrumbs %}
+<i class="bi bi-chevron-right text-[0.6rem]"></i>
+<a href="{% url 'user_list' %}" class="transition-colors hover:text-foreground">Users</a>
+<i class="bi bi-chevron-right text-[0.6rem]"></i>
+<span class="text-foreground">Delete</span>
+{% endblock %}
+{% block content %}
+<div class="card max-w-lg">
+    <div class="card-header">
+        <h2 class="card-title">Delete {{ object.username }}?</h2>
+        <p class="card-description">The account and its access will be permanently removed.</p>
+    </div>
+    <div class="card-content">
+        <div class="alert alert-destructive">
+            <i class="bi bi-exclamation-octagon"></i>
+            <div>
+                <p class="alert-title">Are you sure?</p>
+                <p class="alert-description">This will permanently delete the user account <strong>{{ object.username }}</strong>.</p>
+            </div>
+        </div>
+    </div>
+    <form method="post">
+        {% csrf_token %}
+        <div class="card-footer gap-2">
+            <button type="submit" class="btn btn-destructive">
+                <i class="bi bi-trash"></i>
+                Delete User
+            </button>
+            <a href="{% url 'user_list' %}" class="btn btn-outline">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

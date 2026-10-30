@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+{% block title %}Purchases - Pharmacy IMS{% endblock %}
+{% block page_title %}Purchases{% endblock %}
+{% block page_subtitle %}Purchase orders, deliveries, and supplier invoices{% endblock %}
+{% block breadcrumbs %}
+<i class="bi bi-chevron-right text-[0.6rem]"></i>
+<span class="text-foreground">Purchases</span>
+{% endblock %}
+{% block page_actions %}
+{% if nav_perms.manage_purchases %}
+<a href="{% url 'purchase_add' %}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> New Purchase</a>
+{% endif %}
+{% endblock %}
+{% block content %}
+<section class="card">
+    <div class="card-header border-b border-border">
+        <div>
+            <h2 class="card-title">Purchase Orders</h2>
+            <p class="card-description">{{ page_obj.paginator.count }} order{{ page_obj.paginator.count|pluralize }} recorded</p>
+        </div>
+        <form method="get" class="filter-bar sm:justify-end">
+            <div class="field min-w-[14rem] flex-1">
+                <label class="label" for="q">Search</label>
+                <div class="relative">
+                    <i class="bi bi-search pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground"></i>
+                    <input id="q" name="q" value="{{ query }}" class="input pl-9" placeholder="PO number, supplier, invoice">
+                </div>
+            </div>
+            <div class="field min-w-[10rem]">
+                <label class="label" for="status">Status</label>
+                <select id="status" name="status" class="select">
+                    <option value="">All statuses</option>
+                    {% for value, label in statuses %}<option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="field">
+                <label class="label" for="from">From</label>
+                <input id="from" type="date" name="from" value="{{ date_from }}" class="input">
+            </div>
+            <div class="field">
+                <label class="label" for="to">To</label>
+                <input id="to" type="date" name="to" value="{{ date_to }}" class="input">
+            </div>
+            <div class="flex items-center gap-2 pb-0.5">
+                <button class="btn btn-outline"><i class="bi bi-funnel"></i> Filter</button>
+                {% if query or selected_status or date_from or date_to %}<a href="{% url 'purchase_list' %}" class="btn btn-ghost">Clear</a>{% endif %}
+            </div>
+        </form>
+    </div>
+    <div class="card-content flush">
+        <div class="table-wrap">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>PO No.</th>
+                        <th>Supplier</th>
+                        <th>Date</th>
+                        <th class="text-right">Total</th>
+                        <th>Status</th>
+                        <th>Received by</th>
+                        <th class="text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for purchase in purchases %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'purchase_view' purchase.pk %}" class="font-mono text-xs font-medium text-primary hover:underline">{{ purchase.purchase_no }}</a>
+                            {% if purchase.invoice_no %}<p class="mt-0.5 text-[0.65rem] text-muted-foreground">Inv {{ purchase.invoice_no }}</p>{% endif %}
+                        </td>
+                        <td class="font-medium">{{ purchase.supplier.name }}</td>
+                        <td class="whitespace-nowrap text-muted-foreground">{{ purchase.purchase_date|date:"M d, Y" }}</td>
+                        <td class="text-right font-medium tabular-nums">₱{{ purchase.total_amount|floatformat:2 }}</td>
+                        <td>
+                            {% if purchase.status == 'received' %}<span class="badge badge-success">Received</span>
+                            {% elif purchase.status == 'ordered' %}<span class="badge badge-secondary">Ordered</span>
+                            {% elif purchase.status == 'draft' %}<span class="badge badge-warning">Draft</span>
+                            {% else %}<span class="badge badge-muted">Cancelled</span>{% endif %}
+                        </td>
+                        <td class="text-muted-foreground">{{ purchase.received_by.username|default:"—" }}</td>
+                        <td class="text-right">
+                            <a href="{% url 'purchase_view' purchase.pk %}" class="btn btn-ghost btn-sm">View</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7">
+                            <div class="empty-state">
+                                <span class="empty-state-icon"><i class="bi bi-bag-plus"></i></span>
+                                <div class="empty-state-title">No purchase orders</div>
+                                <div class="empty-state-description">Create a purchase order to receive new stock from a supplier.</div>
+                                {% if nav_perms.manage_purchases %}<a href="{% url 'purchase_add' %}" class="btn btn-outline btn-sm mt-2"><i class="bi bi-plus-lg"></i> New purchase</a>{% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% include 'partials/pagination.html' %}
+</section>
+{% endblock %}

@@ -1,0 +1,121 @@
+{% extends 'base.html' %}
+{% block title %}Reports - Pharmacy IMS{% endblock %}
+{% block page_title %}Reports{% endblock %}
+{% block page_subtitle %}Operational, financial, and compliance reports{% endblock %}
+{% block breadcrumbs %}
+<i class="bi bi-chevron-right text-[0.6rem]"></i>
+<span class="text-foreground">Reports</span>
+{% endblock %}
+{% block content %}
+<div class="space-y-6">
+    <div class="grid gap-4 sm:grid-cols-3">
+        <div class="card">
+            <div class="card-content pt-6">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Sales this month</p>
+                        <p class="mt-2 text-3xl font-semibold tracking-tight tabular-nums">₱{{ month_sales|floatformat:2 }}</p>
+                        <p class="mt-1 text-xs text-muted-foreground">Completed and partially returned</p>
+                    </div>
+                    <span class="page-icon text-emerald-600"><i class="bi bi-currency-dollar"></i></span>
+                </div>
+            </div>
+        </div>
+        <a href="{% url 'alerts' %}" class="card transition-colors hover:border-rose-200">
+            <div class="card-content pt-6">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Low stock items</p>
+                        <p class="mt-2 text-3xl font-semibold tracking-tight tabular-nums {% if low_stock_count %}text-rose-600{% endif %}">{{ low_stock_count }}</p>
+                        <p class="mt-1 text-xs text-muted-foreground">At or below reorder level</p>
+                    </div>
+                    <span class="page-icon text-rose-600"><i class="bi bi-exclamation-triangle"></i></span>
+                </div>
+            </div>
+        </a>
+        <a href="{% url 'alerts' %}" class="card transition-colors hover:border-amber-200">
+            <div class="card-content pt-6">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Near-expiry batches</p>
+                        <p class="mt-2 text-3xl font-semibold tracking-tight tabular-nums {% if near_expiry_count %}text-amber-600{% endif %}">{{ near_expiry_count }}</p>
+                        <p class="mt-1 text-xs text-muted-foreground">Approaching expiry window</p>
+                    </div>
+                    <span class="page-icon text-amber-600"><i class="bi bi-calendar-x"></i></span>
+                </div>
+            </div>
+        </a>
+    </div>
+
+    <div>
+        <h2 class="mb-3 font-display text-lg font-semibold tracking-tight">Available reports</h2>
+        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <a href="{% url 'report_inventory' %}" class="card p-6 transition-colors hover:border-primary/25 hover:shadow-glow">
+                <div class="flex items-start justify-between gap-4">
+                    <span class="page-icon text-sky-600"><i class="bi bi-box-seam"></i></span>
+                    <i class="bi bi-arrow-up-right text-muted-foreground"></i>
+                </div>
+                <div class="mt-4">
+                    <p class="font-medium">Inventory Report</p>
+                    <p class="mt-1 text-sm text-muted-foreground">Current stock across all medicines</p>
+                </div>
+            </a>
+            <a href="{% url 'report_low_stock' %}" class="card p-6 transition-colors hover:border-primary/25 hover:shadow-glow">
+                <div class="flex items-start justify-between gap-4">
+                    <span class="page-icon text-rose-600"><i class="bi bi-exclamation-triangle"></i></span>
+                    <i class="bi bi-arrow-up-right text-muted-foreground"></i>
+                </div>
+                <div class="mt-4">
+                    <p class="font-medium">Low Stock Report</p>
+                    <p class="mt-1 text-sm text-muted-foreground">Items at or below reorder level</p>
+                </div>
+            </a>
+            <a href="{% url 'report_near_expiry' %}" class="card p-6 transition-colors hover:border-primary/25 hover:shadow-glow">
+                <div class="flex items-start justify-between gap-4">
+                    <span class="page-icon text-amber-600"><i class="bi bi-calendar-x"></i></span>
+                    <i class="bi bi-arrow-up-right text-muted-foreground"></i>
+                </div>
+                <div class="mt-4">
+                    <p class="font-medium">Near Expiry Report</p>
+                    <p class="mt-1 text-sm text-muted-foreground">Batches approaching expiration</p>
+                </div>
+            </a>
+            <a href="{% url 'report_sales' %}" class="card p-6 transition-colors hover:border-primary/25 hover:shadow-glow">
+                <div class="flex items-start justify-between gap-4">
+                    <span class="page-icon text-emerald-600"><i class="bi bi-receipt"></i></span>
+                    <i class="bi bi-arrow-up-right text-muted-foreground"></i>
+                </div>
+                <div class="mt-4">
+                    <p class="font-medium">Sales Report</p>
+                    <p class="mt-1 text-sm text-muted-foreground">Transactions, discounts, and refunds</p>
+                </div>
+            </a>
+            <a href="{% url 'report_purchases' %}" class="card p-6 transition-colors hover:border-primary/25 hover:shadow-glow">
+                <div class="flex items-start justify-between gap-4">
+                    <span class="page-icon text-indigo-600"><i class="bi bi-truck"></i></span>
+                    <i class="bi bi-arrow-up-right text-muted-foreground"></i>
+                </div>
+                <div class="mt-4">
+                    <p class="font-medium">Purchases Report</p>
+                    <p class="mt-1 text-sm text-muted-foreground">Purchase orders and supplier spend</p>
+                </div>
+            </a>
+            <a href="{% url 'forecast_index' %}" class="card p-6 transition-colors hover:border-primary/25 hover:shadow-glow">
+                <div class="flex items-start justify-between gap-4">
+                    <span class="page-icon text-teal-600"><i class="bi bi-graph-up-arrow"></i></span>
+                    <i class="bi bi-arrow-up-right text-muted-foreground"></i>
+                </div>
+                <div class="mt-4">
+                    <p class="font-medium">Demand Forecast</p>
+                    <p class="mt-1 text-sm text-muted-foreground">Reorder points and projected demand</p>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <p class="flex items-center gap-2 text-xs text-muted-foreground">
+        <i class="bi bi-file-earmark-excel"></i>
+        <span>Each report can be downloaded as Excel with the filters you select on screen.</span>
+    </p>
+</div>
+{% endblock %}

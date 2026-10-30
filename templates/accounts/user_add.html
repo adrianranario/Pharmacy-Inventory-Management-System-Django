@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block title %}Add User - Pharmacy IMS{% endblock %}
+{% block page_title %}Add User{% endblock %}
+{% block page_subtitle %}Create a staff account and assign a role{% endblock %}
+{% block breadcrumbs %}
+<i class="bi bi-chevron-right text-[0.6rem]"></i>
+<a href="{% url 'user_list' %}" class="transition-colors hover:text-foreground">Users</a>
+<i class="bi bi-chevron-right text-[0.6rem]"></i>
+<span class="text-foreground">Add</span>
+{% endblock %}
+{% block content %}
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+    <div class="card">
+        <form method="post">
+            {% csrf_token %}
+            <div class="card-content grid grid-cols-1 gap-4 sm:grid-cols-2">
+                {% include 'partials/form_fields.html' %}
+            </div>
+            <div class="card-footer flex items-center justify-end gap-2 border-t border-border">
+                <a href="{% url 'user_list' %}" class="btn btn-outline">Cancel</a>
+                <button class="btn btn-primary"><i class="bi bi-check2"></i> Create user</button>
+            </div>
+        </form>
+    </div>
+    <aside class="card h-fit">
+        <div class="card-header"><h2 class="card-title">Role permissions</h2></div>
+        <div class="card-content space-y-3 text-sm text-muted-foreground">
+            <p><span class="font-medium text-foreground">Administrator</span> — full access including users, audit log, voids, and reports.</p>
+            <p><span class="font-medium text-foreground">Pharmacist</span> — dispensing, purchasing, returns, stock adjustments, and reports.</p>
+            <p><span class="font-medium text-foreground">Cashier</span> — point of sale and customer lookup only.</p>
+            <p><span class="font-medium text-foreground">Inventory clerk</span> — catalog, batches, purchase receipts, and stock adjustments.</p>
+            <p class="border-t border-border pt-3 text-xs">New users can enable two-factor authentication from <span class="font-medium text-foreground">Security</span> after signing in.</p>
+        </div>
+    </aside>
+</div>
+{% endblock %}

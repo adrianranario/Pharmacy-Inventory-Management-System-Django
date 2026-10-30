@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }} - Pharmacy IMS{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+{% block page_subtitle %}Link a prescription to a customer and medicine{% endblock %}
+{% block breadcrumbs %}
+<i class="bi bi-chevron-right text-[0.6rem]"></i>
+<a href="{% url 'prescription_list' %}" class="transition-colors hover:text-foreground">Prescriptions</a>
+<i class="bi bi-chevron-right text-[0.6rem]"></i>
+<span class="text-foreground">{{ title }}</span>
+{% endblock %}
+{% block content %}
+<div class="card max-w-3xl">
+    <form method="post">
+        {% csrf_token %}
+        <div class="card-content grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {% include 'partials/form_fields.html' %}
+        </div>
+        <div class="card-footer flex items-center justify-end gap-2 border-t border-border">
+            <a href="{% url 'prescription_list' %}" class="btn btn-outline">Cancel</a>
+            <button class="btn btn-primary"><i class="bi bi-check2"></i> Save prescription</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

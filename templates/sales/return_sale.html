@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% block title %}Return {{ sale.invoice_no }} - Pharmacy IMS{% endblock %}
+{% block page_title %}Process return{% endblock %}
+{% block page_subtitle %}{{ sale.invoice_no }} · {{ sale.customer_name|default:"Walk-in" }}{% endblock %}
+{% block breadcrumbs %}
+<i class="bi bi-chevron-right text-[0.6rem]"></i>
+<a href="{% url 'sales_list' %}" class="transition-colors hover:text-foreground">Sales</a>
+<i class="bi bi-chevron-right text-[0.6rem]"></i>
+<a href="{% url 'sale_view' sale.pk %}" class="transition-colors hover:text-foreground">{{ sale.invoice_no }}</a>
+<i class="bi bi-chevron-right text-[0.6rem]"></i>
+<span class="text-foreground">Return</span>
+{% endblock %}
+{% block content %}
+<form method="post" class="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
+    {% csrf_token %}
+    <section class="card">
+        <div class="card-header border-b border-border">
+            <div>
+                <h2 class="card-title">Choose items to return</h2>
+                <p class="card-description">Refunds are prorated if the original sale had a discount.</p>
+            </div>
+        </div>
+        <div class="card-content flush">
+            <div class="table-wrap">
+                <table class="table">
+                    <thead><tr><th>Medicine</th><th>Batch</th><th class="text-right">Sold</th><th class="text-right">Already returned</th><th class="text-right">Refundable</th><th class="w-32">Return qty</th><th class="text-right">Refund</th></tr></thead>
+                    <tbody>
+                        {% for item in sale.items.all %}
+                        <tr>
+                            <td class="font-medium">{{ item.medicine.generic_name }}</td>
+                            <td class="font-mono text-xs">{{ item.batch.batch_no }}</td>
+                            <td class="text-right">{{ item.quantity }}</td>
+                            <td class="text-right">{{ item.returned_quantity }}</td>
+                            <td class="text-right font-medium">{{ item.refundable_quantity }}</td>
+                            <td>
+                                {% if item.refundable_quantity %}
+                                <input type="number" name="qty_{{ item.pk }}" class="input input-sm" min="0" max="{{ item.refundable_quantity }}" placeholder="0">
+                                {% else %}
+                                <span class="text-xs text-muted-foreground">Fully returned</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-right text-muted-foreground">₱{{ item.price|floatformat:2 }} ea.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <section class="card h-fit">
+        <div class="card-header"><h2 class="card-title">Return details</h2></div>
+        <div class="card-content space-y-4">
+            {% include 'partials/form_fields.html' %}
+            <div class="rounded-lg border border-border bg-muted/40 p-3 text-sm">
+                <div class="flex justify-between"><span class="text-muted-foreground">Original total</span><span>₱{{ sale.total_amount|floatformat:2 }}</span></div>
+                <div class="flex justify-between"><span class="text-muted-foreground">Already refunded</span><span>₱{{ sale.refunded_amount|floatformat:2 }}</span></div>
+            </div>
+            <p class="text-xs text-muted-foreground">Selected quantities are returned to their original batches and become sellable again (FEFO).</p>
+        </div>
+        <div class="card-footer flex items-center justify-end gap-2 border-t border-border">
+            <a href="{% url 'sale_view' sale.pk %}" class="btn btn-outline">Cancel</a>
+            <button class="btn btn-primary"><i class="bi bi-arrow-return-left"></i> Process return</button>
+        </div>
+    </section>
+</form>
+{% endblock %}

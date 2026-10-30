@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+{% block title %}Purchase {{ purchase.purchase_no }} - Pharmacy IMS{% endblock %}
+{% block page_title %}Purchase details{% endblock %}
+{% block page_subtitle %}{{ purchase.purchase_no }} · {{ purchase.supplier.name }}{% endblock %}
+{% block breadcrumbs %}
+<i class="bi bi-chevron-right text-[0.6rem]"></i>
+<a href="{% url 'purchase_list' %}" class="transition-colors hover:text-foreground">Purchases</a>
+<i class="bi bi-chevron-right text-[0.6rem]"></i>
+<span class="text-foreground">{{ purchase.purchase_no }}</span>
+{% endblock %}
+{% block page_actions %}
+<a href="{% url 'purchase_list' %}" class="btn btn-outline"><i class="bi bi-arrow-left"></i> Back</a>
+{% if nav_perms.manage_purchases and purchase.is_receivable %}
+{% if purchase.status == 'draft' %}
+<form method="post" action="{% url 'purchase_mark_ordered' purchase.pk %}">
+    {% csrf_token %}
+    <button class="btn btn-outline"><i class="bi bi-send"></i> Mark as ordered</button>
+</form>
+{% endif %}
+<form method="post" action="{% url 'purchase_receive' purchase.pk %}" onsubmit="return confirm('Receive this purchase and add stock?');">
+    {% csrf_token %}
+    <button class="btn btn-primary"><i class="bi bi-box-arrow-in-down"></i> Receive stock</button>
+</form>
+<form method="post" action="{% url 'purchase_cancel' purchase.pk %}" onsubmit="return confirm('Cancel this purchase order?');">
+    {% csrf_token %}
+    <button class="btn btn-outline text-rose-600"><i class="bi bi-x-lg"></i> Cancel PO</button>
+</form>
+{% endif %}
+{% endblock %}
+{% block content %}
+<div class="space-y-6">
+    <div class="card">
+        <div class="card-header row border-b border-border">
+            <div>
+                <h2 class="card-title">{{ purchase.purchase_no }}</h2>
+                <p class="card-description">{{ purchase.supplier.name }} · {{ purchase.purchase_date }}</p>
+            </div>
+            {% if purchase.status == 'received' %}<span class="badge badge-success">Received</span>
+            {% elif purchase.status == 'draft' %}<span class="badge badge-outline">Draft</span>
+            {% elif purchase.status == 'ordered' %}<span class="badge badge-warning">Ordered</span>
+            {% else %}<span class="badge badge-muted">Cancelled</span>{% endif %}
+        </div>
+        <div class="card-content grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
+            <div><p class="text-muted-foreground">Supplier invoice</p><p class="mt-1 font-medium">{{ purchase.invoice_no|default:"—" }}</p></div>
+            <div><p class="text-muted-foreground">Created by</p><p class="mt-1 font-medium">{{ purchase.purchased_by.username }}</p></div>
+            <div><p class="text-muted-foreground">Received by</p><p class="mt-1 font-medium">{{ purchase.received_by.username|default:"—" }}</p></div>
+            <div><p class="text-muted-foreground">Received at</p><p class="mt-1 font-medium">{{ purchase.received_at|date:"M d, Y H:i"|default:"—" }}</p></div>
+        </div>
+    </div>
+
+    <section class="card">
+        <div class="card-header border-b border-border">
+            <h2 class="card-title">Items</h2>
+        </div>
+        <div class="card-content flush">
+            <div class="table-wrap">
+                <table class="table">
+                    <thead><tr><th>Medicine</th><th>Batch</th><th>Expiry</th><th class="text-right">Qty</th><th class="text-right">Unit cost</th><th class="text-right">Subtotal</th></tr></thead>
+                    <tbody>
+                        {% for item in purchase.items.all %}
+                        <tr>
+                            <td class="font-medium">{{ item.medicine.generic_name }}</td>
+                            <td class="font-mono text-xs">{{ item.batch_no }}</td>
+                            <td>{{ item.expiry_date }}</td>
+                            <td class="text-right">{{ item.quantity }}</td>
+                            <td class="text-right">₱{{ item.unit_price|floatformat:2 }}</td>
+                            <td class="text-right font-medium">₱{{ item.subtotal|floatformat:2 }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="6" class="p-0">
+                            <div class="empty-state">
+                                <span class="empty-state-icon"><i class="bi bi-bag-plus"></i></span>
+                                <div class="empty-state-title">No items recorded</div>
+                                <div class="empty-state-description">This purchase has no line items.</div>
+                            </div>
+                        </td></tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot><tr><td colspan="5" class="text-right font-medium">Total</td><td class="text-right font-semibold">₱{{ purchase.total_amount|floatformat:2 }}</td></tr></tfoot>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    {% if purchase.notes %}
+    <div class="card">
+        <div class="card-header"><h2 class="card-title">Notes</h2></div>
+        <div class="card-content text-sm text-muted-foreground">{{ purchase.notes|linebreaksbr }}</div>
+    </div>
+    {% endif %}
+
+    {% if purchase.is_receivable %}
+    <p class="text-xs text-muted-foreground"><i class="bi bi-info-circle"></i> Batches and stock ledger entries are created only when this purchase is received.</p>
+    {% endif %}
+</div>
+{% endblock %}

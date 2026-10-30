@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+{% block title %}Inventory Stock - Pharmacy IMS{% endblock %}
+{% block page_title %}Inventory Stock{% endblock %}
+{% block page_subtitle %}Batch-level stock on hand and expiry status{% endblock %}
+{% block breadcrumbs %}
+<i class="bi bi-chevron-right text-[0.6rem]"></i>
+<a href="{% url 'inventory_list' %}" class="transition-colors hover:text-foreground">Inventory</a>
+<i class="bi bi-chevron-right text-[0.6rem]"></i>
+<span class="text-foreground">Stock</span>
+{% endblock %}
+{% block page_actions %}
+<a href="{% url 'stock_movements' %}" class="btn btn-outline"><i class="bi bi-arrow-left-right"></i> Stock ledger</a>
+{% endblock %}
+{% block content %}
+<section class="card">
+    <div class="card-header border-b border-border">
+        <form method="get" class="filter-bar">
+            <div class="field min-w-60 flex-1">
+                <label class="label" for="q">Search</label>
+                <input id="q" name="q" value="{{ query }}" class="input" placeholder="Medicine, code, or batch number">
+            </div>
+            <div class="field min-w-44">
+                <label class="label" for="category">Category</label>
+                <select id="category" name="category" class="select">
+                    <option value="">All categories</option>
+                    {% for category in categories %}
+                    <option value="{{ category.pk }}" {% if selected_category == category.pk|stringformat:"s" %}selected{% endif %}>{{ category.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="field min-w-40">
+                <label class="label" for="state">Expiry</label>
+                <select id="state" name="state" class="select">
+                    <option value="">All batches</option>
+                    <option value="expired" {% if selected_state == 'expired' %}selected{% endif %}>Expired</option>
+                    <option value="near" {% if selected_state == 'near' %}selected{% endif %}>Near expiry</option>
+                    <option value="good" {% if selected_state == 'good' %}selected{% endif %}>Good</option>
+                </select>
+            </div>
+            <button class="btn btn-outline"><i class="bi bi-search"></i> Filter</button>
+            {% if query or selected_category or selected_state %}<a href="{% url 'inventory_list' %}" class="btn btn-ghost">Clear</a>{% endif %}
+        </form>
+    </div>
+    <div class="card-content flush">
+        <div class="table-wrap">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Medicine</th>
+                        <th>Batch</th>
+                        <th>Expiry</th>
+                        <th class="text-right">Remaining</th>
+                        <th class="text-right">Cost</th>
+                        <th class="text-right">Stock value</th>
+                        <th class="text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for batch in batches %}
+                    <tr>
+                        <td>
+                            <p class="font-medium">{{ batch.medicine.generic_name }}</p>
+                            <p class="mt-0.5 font-mono text-xs text-muted-foreground">{{ batch.medicine.medicine_code }}</p>
+                        </td>
+                        <td class="font-mono text-xs">{{ batch.batch_no }}</td>
+                        <td>
+                            <p>{{ batch.expiry_date }}</p>
+                            {% if batch.is_expired %}
+                            <span class="badge badge-destructive mt-1">Expired</span>
+                            {% elif batch.is_near_expiry %}
+                            <span class="badge badge-warning mt-1">{{ batch.days_to_expire }} days left</span>
+                            {% else %}
+                            <span class="text-xs text-muted-foreground">{{ batch.days_to_expire }} days left</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-right font-medium">{{ batch.remaining_quantity }} <span class="text-xs text-muted-foreground">{{ batch.medicine.unit }}</span></td>
+                        <td class="text-right text-muted-foreground">₱{{ batch.purchase_price|floatformat:2 }}</td>
+                        <td class="text-right">₱{{ batch.stock_value|floatformat:2 }}</td>
+                        <td class="text-right">
+                            {% if nav_perms.manage_inventory %}
+                            <div class="inline-flex items-center gap-1">
+                                <a href="{% url 'adjust_stock' batch.pk %}" class="btn btn-outline btn-sm" title="Adjust"><i class="bi bi-sliders"></i></a>
+                                <a href="{% url 'write_off_batch' batch.pk %}" class="btn btn-ghost btn-sm btn-icon text-rose-600" title="Write off" aria-label="Write off"><i class="bi bi-slash-circle"></i></a>
+                            </div>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="7" class="p-0">
+                            <div class="empty-state">
+                                <span class="empty-state-icon"><i class="bi bi-box-seam"></i></span>
+                                <div class="empty-state-title">No batches found</div>
+                                <div class="empty-state-description">Adjust the filters or receive stock to create batches.</div>
+                            </div>
+                        </td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% include 'partials/pagination.html' %}
+</section>
+{% endblock %}

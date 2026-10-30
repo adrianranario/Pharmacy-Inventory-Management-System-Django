@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+{% block title %}New Purchase - Pharmacy IMS{% endblock %}
+{% block page_title %}New Purchase{% endblock %}
+{% block page_subtitle %}Create a purchase order, then receive it when the delivery arrives{% endblock %}
+{% block breadcrumbs %}
+<i class="bi bi-chevron-right text-[0.6rem]"></i>
+<a href="{% url 'purchase_list' %}" class="transition-colors hover:text-foreground">Purchases</a>
+<i class="bi bi-chevron-right text-[0.6rem]"></i>
+<span class="text-foreground">New</span>
+{% endblock %}
+{% block content %}
+<form method="post" class="space-y-6">
+    {% csrf_token %}
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Purchase details</h2>
+            <p class="card-description">Supplier invoice numbers help reconcile deliveries.</p>
+        </div>
+        <div class="card-content grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div class="field">
+                <label class="label" for="supplier">Supplier *</label>
+                <select id="supplier" name="supplier" class="select" required>
+                    {% for supplier in suppliers %}<option value="{{ supplier.id }}">{{ supplier.name }} · {{ supplier.lead_time_days }}d lead</option>{% endfor %}
+                </select>
+            </div>
+            <div class="field">
+                <label class="label" for="purchase_date">Purchase date *</label>
+                <input id="purchase_date" type="date" name="purchase_date" value="{{ today|date:'Y-m-d' }}" class="input" required>
+            </div>
+            <div class="field">
+                <label class="label" for="invoice_no">Supplier invoice</label>
+                <input id="invoice_no" type="text" name="invoice_no" class="input" placeholder="Optional">
+            </div>
+            <div class="field">
+                <label class="label" for="notes">Notes</label>
+                <input id="notes" type="text" name="notes" class="input" placeholder="Optional remarks">
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header row">
+            <div>
+                <h2 class="card-title">Items</h2>
+                <p class="card-description">One row per batch. Stock is only added when the order is received.</p>
+            </div>
+            <button type="button" class="btn btn-outline btn-sm" onclick="addRow()">
+                <i class="bi bi-plus-lg"></i> Add item
+            </button>
+        </div>
+        <div class="card-content flush">
+            <div class="table-wrap">
+                <table class="table table-sm" id="itemsTable">
+                    <thead>
+                        <tr>
+                            <th class="min-w-[14rem]">Medicine</th>
+                            <th class="min-w-[9rem]">Batch no.</th>
+                            <th class="min-w-[6rem]">Qty</th>
+                            <th class="min-w-[8rem]">Unit cost</th>
+                            <th class="min-w-[9rem]">Expiry date</th>
+                            <th class="w-12"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                <select name="medicine_id[]" class="select input-sm">
+                                    {% for medicine in medicines %}<option value="{{ medicine.id }}">{{ medicine.generic_name }}{% if medicine.brand_name %} · {{ medicine.brand_name }}{% endif %}</option>{% endfor %}
+                                </select>
+                            </td>
+                            <td><input type="text" name="batch_no[]" class="input input-sm" placeholder="e.g. BX-2401" required></td>
+                            <td><input type="number" name="quantity[]" class="input input-sm" min="1" required></td>
+                            <td><input type="number" step="0.01" name="unit_price[]" class="input input-sm" min="0" required></td>
+                            <td><input type="date" name="expiry_date[]" class="input input-sm" min="{{ today|date:'Y-m-d' }}" required></td>
+                            <td class="text-right">
+                                <button type="button" class="btn btn-ghost btn-icon btn-sm text-muted-foreground hover:text-destructive" onclick="this.closest('tr').remove()" aria-label="Remove item"><i class="bi bi-trash"></i></button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="card-footer flex flex-col items-stretch justify-between gap-2 border-t border-border sm:flex-row sm:items-center">
+            <a href="{% url 'purchase_list' %}" class="btn btn-outline">Cancel</a>
+            <div class="flex flex-col gap-2 sm:flex-row">
+                <button type="submit" name="action" value="draft" class="btn btn-outline"><i class="bi bi-save"></i> Save as draft</button>
+                <button type="submit" name="action" value="receive" class="btn btn-primary"><i class="bi bi-box-arrow-in-down"></i> Receive now</button>
+            </div>
+        </div>
+    </div>
+</form>
+{% endblock %}
+{% block extra_js %}
+<script>
+function addRow(){
+    const tbody = document.querySelector('#itemsTable tbody');
+    const tr = tbody.rows[0].cloneNode(true);
+    tr.querySelectorAll('input').forEach(input => input.value = '');
+    tr.querySelectorAll('select').forEach(select => select.selectedIndex = 0);
+    tbody.appendChild(tr);
+}
+</script>
+{% endblock %}

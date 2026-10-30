@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+{% block title %}Stock Ledger - Pharmacy IMS{% endblock %}
+{% block page_title %}Stock Ledger{% endblock %}
+{% block page_subtitle %}Every stock change, with the document that caused it{% endblock %}
+{% block breadcrumbs %}
+<i class="bi bi-chevron-right text-[0.6rem]"></i>
+<a href="{% url 'inventory_list' %}" class="transition-colors hover:text-foreground">Inventory</a>
+<i class="bi bi-chevron-right text-[0.6rem]"></i>
+<span class="text-foreground">Stock ledger</span>
+{% endblock %}
+{% block content %}
+<section class="card">
+    <div class="card-header border-b border-border">
+        <form method="get" class="filter-bar">
+            <div class="field min-w-56 flex-1">
+                <label class="label" for="q">Search</label>
+                <input id="q" name="q" value="{{ query }}" class="input" placeholder="Medicine, batch, or reference">
+            </div>
+            <div class="field min-w-44">
+                <label class="label" for="type">Type</label>
+                <select id="type" name="type" class="select">
+                    <option value="">All movements</option>
+                    {% for value, label in types %}<option value="{{ value }}" {% if selected_type == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="field">
+                <label class="label" for="from">From</label>
+                <input id="from" type="date" name="from" value="{{ date_from }}" class="input">
+            </div>
+            <div class="field">
+                <label class="label" for="to">To</label>
+                <input id="to" type="date" name="to" value="{{ date_to }}" class="input">
+            </div>
+            <button class="btn btn-outline"><i class="bi bi-search"></i> Filter</button>
+            {% if query or selected_type or date_from or date_to %}<a href="{% url 'stock_movements' %}" class="btn btn-ghost">Clear</a>{% endif %}
+        </form>
+    </div>
+    <div class="card-content flush">
+        <div class="table-wrap">
+            <table class="table">
+                <thead><tr><th>When</th><th>Medicine</th><th>Batch</th><th>Type</th><th class="text-right">Change</th><th class="text-right">Balance</th><th>Reference</th><th>User</th></tr></thead>
+                <tbody>
+                    {% for movement in movements %}
+                    <tr>
+                        <td class="whitespace-nowrap text-xs text-muted-foreground">{{ movement.created_at|date:"M d, Y H:i" }}</td>
+                        <td>
+                            <p class="font-medium">{{ movement.medicine.generic_name }}</p>
+                            <p class="text-xs text-muted-foreground">{{ movement.medicine.medicine_code }}</p>
+                        </td>
+                        <td class="font-mono text-xs">{{ movement.batch.batch_no|default:"—" }}</td>
+                        <td>
+                            {% if movement.movement_type == 'sale' %}<span class="badge badge-secondary">Sale</span>
+                            {% elif movement.movement_type == 'purchase' %}<span class="badge badge-success">Purchase</span>
+                            {% elif movement.movement_type == 'return' %}<span class="badge badge-secondary">Return</span>
+                            {% elif movement.movement_type == 'expiry' or movement.movement_type == 'writeoff' %}<span class="badge badge-destructive">{{ movement.get_movement_type_display }}</span>
+                            {% elif movement.movement_type == 'void' %}<span class="badge badge-warning">Void</span>
+                            {% else %}<span class="badge badge-outline">Adjustment</span>{% endif %}
+                        </td>
+                        <td class="text-right font-medium {% if movement.quantity > 0 %}text-emerald-600{% else %}text-rose-600{% endif %}">{{ movement.quantity|stringformat:"+d" }}</td>
+                        <td class="text-right">{{ movement.balance_after|default:"—" }}</td>
+                        <td class="font-mono text-xs">{{ movement.reference|default:"—" }}</td>
+                        <td class="text-muted-foreground">{{ movement.user.username|default:"system" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="8" class="p-0">
+                            <div class="empty-state">
+                                <span class="empty-state-icon"><i class="bi bi-arrow-left-right"></i></span>
+                                <div class="empty-state-title">No stock movements</div>
+                                <div class="empty-state-description">Adjust the filters. Every stock change is recorded here.</div>
+                            </div>
+                        </td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% include 'partials/pagination.html' %}
+</section>
+{% endblock %}
